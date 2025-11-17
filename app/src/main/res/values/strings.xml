@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">report_issue</string>
+    <string name="report_infrastructure_issue">Report Infrastructure Issue</string>
+    <string name="capture_a_photo_of_the_problem_and_we_ll_analyze_it_with_ai">Capture a photo of the problem and we\'ll analyze it with AI</string>
+    <string name="photo_of_the_issue">Photo of the Issue *</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="upload_photo">Upload Photo</string>
+    <string name="upload_icon">Upload icon</string>
+</resources>
