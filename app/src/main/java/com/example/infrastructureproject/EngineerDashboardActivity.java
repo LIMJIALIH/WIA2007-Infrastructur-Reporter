@@ -1,0 +1,478 @@
+package com.example.infrastructureproject;
+
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.infrastructurereporter.R;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class EngineerDashboardActivity extends AppCompatActivity implements TicketAdapter.OnTicketActionListener {
+
+    // Header views
+    private TextView tvDashboardTitle;
+    private TextView tvWelcome;
+    private ImageView ivMenu;
+
+    // Stat card views
+    private TextView tvStatNewTodayValue;
+    private TextView tvStatThisWeekValue;
+    private TextView tvStatAvgResponseValue;
+    private TextView tvStatHighPriorityValue;
+
+    // Search and filter views
+    private EditText etSearch;
+    private ImageView ivSearch;
+    private ImageView ivFilter;
+    private Spinner spinnerTypes;
+    private Spinner spinnerSeverities;
+
+    // Tabs
+    private TextView tabPendingReview;
+    private TextView tabRejected;
+    private TextView tabSpam;
+    private TextView tabAccepted;
+
+    // Content area
+    private ConstraintLayout contentArea;
+    private ConstraintLayout emptyStateContainer;
+    private RecyclerView recyclerViewTickets;
+    private ImageView ivEmptyState;
+    private TextView tvEmptyStateTitle;
+    private TextView tvEmptyStateMessage;
+
+    // Refresh button
+    private LinearLayout btnRefresh;
+    private TextView tvAllTickets;
+
+    // Data arrays
+    private String[] ticketTypes;
+    private String[] severityLevels;
+
+    // Ticket data
+    private List<Ticket> allTickets;
+    private List<Ticket> pendingTickets;
+    private List<Ticket> acceptedTickets;
+    private List<Ticket> rejectedTickets;
+    private List<Ticket> spamTickets;
+    private List<Ticket> currentDisplayedTickets;
+
+    // Adapter
+    private TicketAdapter ticketAdapter;
+
+    // Current tab index
+    private int currentTabIndex = 0;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_engineer_dashboard);
+
+        // Initialize views
+        initializeViews();
+
+        // Initialize data lists
+        initializeDataLists();
+
+        // Setup data
+        setupData();
+
+        // Setup RecyclerView
+        setupRecyclerView();
+
+        // Setup spinners
+        setupSpinners();
+
+        // Setup click listeners
+        setupClickListeners();
+
+        // Load initial data
+        loadDashboardData();
+    }
+
+    private void initializeDataLists() {
+        allTickets = new ArrayList<>();
+        pendingTickets = new ArrayList<>();
+        acceptedTickets = new ArrayList<>();
+        rejectedTickets = new ArrayList<>();
+        spamTickets = new ArrayList<>();
+        currentDisplayedTickets = new ArrayList<>();
+
+        // Load mock data
+        allTickets = MockDataGenerator.generateMockTickets();
+
+        // Initially all tickets are pending
+        for (Ticket ticket : allTickets) {
+            pendingTickets.add(ticket);
+        }
+    }
+
+    private void initializeViews() {
+        // Header
+        tvDashboardTitle = findViewById(R.id.tvDashboardTitle);
+        tvWelcome = findViewById(R.id.tvWelcome);
+        ivMenu = findViewById(R.id.ivMenu);
+
+        // Stat cards
+        tvStatNewTodayValue = findViewById(R.id.tvStatNewTodayValue);
+        tvStatThisWeekValue = findViewById(R.id.tvStatThisWeekValue);
+        tvStatAvgResponseValue = findViewById(R.id.tvStatAvgResponseValue);
+        tvStatHighPriorityValue = findViewById(R.id.tvStatHighPriorityValue);
+
+        // Search and filter
+        etSearch = findViewById(R.id.etSearch);
+        ivSearch = findViewById(R.id.ivSearch);
+        ivFilter = findViewById(R.id.ivFilter);
+        spinnerTypes = findViewById(R.id.spinnerTypes);
+        spinnerSeverities = findViewById(R.id.spinnerSeverities);
+
+        // Tabs
+        tabPendingReview = findViewById(R.id.tabPendingReview);
+        tabRejected = findViewById(R.id.tabRejected);
+        tabSpam = findViewById(R.id.tabSpam);
+        tabAccepted = findViewById(R.id.tabAccepted);
+
+        // Content area
+        contentArea = findViewById(R.id.contentArea);
+        emptyStateContainer = findViewById(R.id.emptyStateContainer);
+        recyclerViewTickets = findViewById(R.id.recyclerViewTickets);
+        ivEmptyState = findViewById(R.id.ivEmptyState);
+        tvEmptyStateTitle = findViewById(R.id.tvEmptyStateTitle);
+        tvEmptyStateMessage = findViewById(R.id.tvEmptyStateMessage);
+
+        // Refresh button
+        btnRefresh = findViewById(R.id.btnRefresh);
+        tvAllTickets = findViewById(R.id.tvAllTickets);
+    }
+
+    private void setupRecyclerView() {
+        ticketAdapter = new TicketAdapter(this, this);
+        recyclerViewTickets.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewTickets.setAdapter(ticketAdapter);
+        recyclerViewTickets.setNestedScrollingEnabled(false);
+    }
+
+    private void setupData() {
+        // Initialize ticket types
+        ticketTypes = new String[]{
+                getString(R.string.all_types),
+                getString(R.string.category_road),
+                getString(R.string.category_utilities),
+                getString(R.string.category_facilities),
+                getString(R.string.category_environment),
+                getString(R.string.type_other)
+        };
+
+        // Initialize severity levels
+        severityLevels = new String[]{
+                getString(R.string.all_severities),
+                getString(R.string.severity_low),
+                getString(R.string.severity_medium),
+                getString(R.string.severity_high)
+        };
+    }
+
+    private void setupSpinners() {
+        // Setup Types Spinner
+        ArrayAdapter<String> typesAdapter = new ArrayAdapter<>(
+                this,
+                R.layout.spinner_item,
+                ticketTypes
+        );
+        typesAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        spinnerTypes.setAdapter(typesAdapter);
+
+        // Setup Severities Spinner
+        ArrayAdapter<String> severitiesAdapter = new ArrayAdapter<>(
+                this,
+                R.layout.spinner_item,
+                severityLevels
+        );
+        severitiesAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
+        spinnerSeverities.setAdapter(severitiesAdapter);
+
+        // Set spinner listeners
+        spinnerTypes.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                filterTickets();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Do nothing
+            }
+        });
+
+        spinnerSeverities.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                filterTickets();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Do nothing
+            }
+        });
+    }
+
+    private void setupClickListeners() {
+        // Menu button
+        ivMenu.setOnClickListener(v -> {
+            Toast.makeText(this, "Menu clicked", Toast.LENGTH_SHORT).show();
+        });
+
+        // Refresh button
+        btnRefresh.setOnClickListener(v -> refreshDashboard());
+
+        // Tab click listeners
+        tabPendingReview.setOnClickListener(v -> selectTab(0));
+        tabRejected.setOnClickListener(v -> selectTab(1));
+        tabSpam.setOnClickListener(v -> selectTab(2));
+        tabAccepted.setOnClickListener(v -> selectTab(3));
+
+        // Filter icon click
+        ivFilter.setOnClickListener(v -> {
+            Toast.makeText(this, "Advanced filter options", Toast.LENGTH_SHORT).show();
+        });
+
+        // Search text watcher
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterTickets();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void loadDashboardData() {
+        // Update statistics
+        updateStatisticsFromTickets();
+
+        // Set welcome message with username
+        String username = "ongyihao100";
+        tvWelcome.setText(String.format(getString(R.string.welcome_user), username));
+
+        // Update tab counts
+        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                spamTickets.size(), acceptedTickets.size());
+
+        // Load tickets for current tab
+        selectTab(currentTabIndex);
+    }
+
+    private void updateStatisticsFromTickets() {
+        // Count tickets from today
+        int newToday = (int) pendingTickets.stream()
+                .filter(t -> t.getDateTime().contains("2025-11-16"))
+                .count();
+
+        // Count tickets from this week
+        int thisWeek = pendingTickets.size();
+
+        // Count high priority tickets
+        int highPriority = (int) pendingTickets.stream()
+                .filter(t -> t.getSeverity().equals("High"))
+                .count();
+
+        tvStatNewTodayValue.setText(String.valueOf(newToday));
+        tvStatThisWeekValue.setText(String.valueOf(thisWeek));
+        tvStatAvgResponseValue.setText("< 2 hours");
+        tvStatHighPriorityValue.setText(String.valueOf(highPriority));
+    }
+
+    private void selectTab(int tabIndex) {
+        currentTabIndex = tabIndex;
+
+        // Reset all tabs to unselected state
+        tabPendingReview.setBackgroundResource(R.drawable.bg_tab_unselected);
+        tabPendingReview.setTextColor(getResources().getColor(R.color.text_secondary, null));
+
+        tabRejected.setBackgroundResource(R.drawable.bg_tab_unselected);
+        tabRejected.setTextColor(getResources().getColor(R.color.text_secondary, null));
+
+        tabSpam.setBackgroundResource(R.drawable.bg_tab_unselected);
+        tabSpam.setTextColor(getResources().getColor(R.color.text_secondary, null));
+
+        tabAccepted.setBackgroundResource(R.drawable.bg_tab_unselected);
+        tabAccepted.setTextColor(getResources().getColor(R.color.text_secondary, null));
+
+        // Set selected tab
+        TextView selectedTab;
+        List<Ticket> ticketsToShow;
+
+        switch (tabIndex) {
+            case 0:
+                selectedTab = tabPendingReview;
+                ticketsToShow = pendingTickets;
+                break;
+            case 1:
+                selectedTab = tabRejected;
+                ticketsToShow = rejectedTickets;
+                break;
+            case 2:
+                selectedTab = tabSpam;
+                ticketsToShow = spamTickets;
+                break;
+            case 3:
+                selectedTab = tabAccepted;
+                ticketsToShow = acceptedTickets;
+                break;
+            default:
+                selectedTab = tabPendingReview;
+                ticketsToShow = pendingTickets;
+        }
+
+        selectedTab.setBackgroundResource(R.drawable.bg_tab_selected);
+        selectedTab.setTextColor(getResources().getColor(R.color.text_primary, null));
+
+        // Load tickets for selected tab
+        loadTicketsForTab(ticketsToShow);
+    }
+
+    private void loadTicketsForTab(List<Ticket> tickets) {
+        currentDisplayedTickets = new ArrayList<>(tickets);
+        filterTickets();
+    }
+
+    private void updateTabCounts(int pendingCount, int rejectedCount, int spamCount, int acceptedCount) {
+        tabPendingReview.setText(String.format(getString(R.string.pending_review), pendingCount));
+        tabRejected.setText(String.format(getString(R.string.rejected), rejectedCount));
+        tabSpam.setText(String.format(getString(R.string.spam), spamCount));
+        tabAccepted.setText(String.format(getString(R.string.accepted), acceptedCount));
+    }
+
+    private void showEmptyState() {
+        emptyStateContainer.setVisibility(View.VISIBLE);
+        recyclerViewTickets.setVisibility(View.GONE);
+    }
+
+    private void hideEmptyState() {
+        emptyStateContainer.setVisibility(View.GONE);
+        recyclerViewTickets.setVisibility(View.VISIBLE);
+    }
+
+    private void filterTickets() {
+        String selectedType = spinnerTypes.getSelectedItem().toString();
+        String selectedSeverity = spinnerSeverities.getSelectedItem().toString();
+        String searchQuery = etSearch.getText().toString().toLowerCase();
+
+        List<Ticket> filteredTickets = new ArrayList<>(currentDisplayedTickets);
+
+        // Filter by type
+        if (!selectedType.equals(getString(R.string.all_types))) {
+            filteredTickets = filteredTickets.stream()
+                    .filter(t -> t.getType().equals(selectedType))
+                    .collect(Collectors.toList());
+        }
+
+        // Filter by severity
+        if (!selectedSeverity.equals(getString(R.string.all_severities))) {
+            filteredTickets = filteredTickets.stream()
+                    .filter(t -> t.getSeverity().equals(selectedSeverity))
+                    .collect(Collectors.toList());
+        }
+
+        // Filter by search query
+        if (!searchQuery.isEmpty()) {
+            filteredTickets = filteredTickets.stream()
+                    .filter(t -> t.getType().toLowerCase().contains(searchQuery) ||
+                            t.getLocation().toLowerCase().contains(searchQuery) ||
+                            t.getDescription().toLowerCase().contains(searchQuery))
+                    .collect(Collectors.toList());
+        }
+
+        // Update adapter
+        if (filteredTickets.isEmpty()) {
+            showEmptyState();
+        } else {
+            hideEmptyState();
+            ticketAdapter.setTickets(filteredTickets);
+        }
+    }
+
+    private void refreshDashboard() {
+        // Reload data
+        initializeDataLists();
+        loadDashboardData();
+        Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+    }
+
+    // Ticket action callbacks
+    @Override
+    public void onAccept(Ticket ticket, int position) {
+        ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+        pendingTickets.remove(ticket);
+        acceptedTickets.add(ticket);
+
+        ticketAdapter.removeTicket(position);
+        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                spamTickets.size(), acceptedTickets.size());
+        updateStatisticsFromTickets();
+
+        Toast.makeText(this, "Ticket " + ticket.getId() + " accepted", Toast.LENGTH_SHORT).show();
+
+        if (ticketAdapter.getItemCount() == 0) {
+            showEmptyState();
+        }
+    }
+
+    @Override
+    public void onReject(Ticket ticket, int position) {
+        ticket.setStatus(Ticket.TicketStatus.REJECTED);
+        pendingTickets.remove(ticket);
+        rejectedTickets.add(ticket);
+
+        ticketAdapter.removeTicket(position);
+        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                spamTickets.size(), acceptedTickets.size());
+        updateStatisticsFromTickets();
+
+        Toast.makeText(this, "Ticket " + ticket.getId() + " rejected", Toast.LENGTH_SHORT).show();
+
+        if (ticketAdapter.getItemCount() == 0) {
+            showEmptyState();
+        }
+    }
+
+    @Override
+    public void onSpam(Ticket ticket, int position) {
+        ticket.setStatus(Ticket.TicketStatus.SPAM);
+        pendingTickets.remove(ticket);
+        spamTickets.add(ticket);
+
+        ticketAdapter.removeTicket(position);
+        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                spamTickets.size(), acceptedTickets.size());
+        updateStatisticsFromTickets();
+
+        Toast.makeText(this, "Ticket " + ticket.getId() + " marked as spam", Toast.LENGTH_SHORT).show();
+
+        if (ticketAdapter.getItemCount() == 0) {
+            showEmptyState();
+        }
+    }
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Margins and Padding -->
+    <dimen name="margin_small">8dp</dimen>
+    <dimen name="margin_medium">16dp</dimen>
+    <dimen name="margin_large">24dp</dimen>
+
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">16dp</dimen>
+    <dimen name="padding_large">24dp</dimen>
+
+    <!-- Card Dimensions -->
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="card_elevation">2dp</dimen>
+
+    <!-- Text Sizes -->
+    <dimen name="text_size_title">20sp</dimen>
+    <dimen name="text_size_subtitle">14sp</dimen>
+    <dimen name="text_size_body">16sp</dimen>
+    <dimen name="text_size_stat_value">32sp</dimen>
+    <dimen name="text_size_stat_label">12sp</dimen>
+    <dimen name="text_size_button">14sp</dimen>
+
+    <!-- Icon Sizes -->
+    <dimen name="icon_size_small">20dp</dimen>
+    <dimen name="icon_size_medium">24dp</dimen>
+    <dimen name="icon_size_large">64dp</dimen>
+
+    <!-- Stat Card -->
+    <dimen name="stat_card_height">100dp</dimen>
+
+    <!-- Search Bar -->
+    <dimen name="search_bar_height">48dp</dimen>
+
+    <!-- Tab Height -->
+    <dimen name="tab_height">48dp</dimen>
+</resources>
