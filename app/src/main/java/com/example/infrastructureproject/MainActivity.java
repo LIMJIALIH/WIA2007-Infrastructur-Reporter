@@ -1,10 +1,12 @@
 package com.example.infrastructureproject;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.LayoutInflater;
@@ -13,6 +15,7 @@ import android.widget.ImageButton;
 import android.widget.PopupWindow;
 
 import com.example.infrastructurereporter.R;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.activity.EdgeToEdge;
@@ -27,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView newReportsButton;
     private CardView selectionBackground;
     private PopupWindow popupWindow;
+    private MaterialButton logoutButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +46,23 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize toggle buttons
         initializeToggleButtons();
+        
+        // Initialize logout button
+        logoutButton = findViewById(R.id.logoutButton);
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                handleLogout();
+            }
+        });
+    }
+
+    private void handleLogout() {
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, LoginMainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void initializeToggleButtons() {

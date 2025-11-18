@@ -1,5 +1,7 @@
 package com.example.infrastructureproject;
 
+import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -236,7 +238,7 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     private void setupClickListeners() {
         // Menu button
         ivMenu.setOnClickListener(v -> {
-            Toast.makeText(this, "Menu clicked", Toast.LENGTH_SHORT).show();
+            showMenuDialog();
         });
 
         // Refresh button
@@ -419,6 +421,26 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         initializeDataLists();
         loadDashboardData();
         Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+    }
+
+    private void showMenuDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Menu");
+        builder.setItems(new String[]{"Logout"}, (dialog, which) -> {
+            if (which == 0) {
+                handleLogout();
+            }
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void handleLogout() {
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, LoginMainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     // Ticket action callbacks
