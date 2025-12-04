@@ -7,6 +7,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -19,6 +20,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.textfield.TextInputEditText;
 import com.example.infrastructurereporter.R;
 
 import java.util.ArrayList;
@@ -30,7 +32,7 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     // Header views
     private TextView tvDashboardTitle;
     private TextView tvWelcome;
-    private ImageView ivMenu;
+    private android.widget.Button btnLogout;
 
     // Stat card views
     private TextView tvStatNewTodayValue;
@@ -129,7 +131,7 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         // Header
         tvDashboardTitle = findViewById(R.id.tvDashboardTitle);
         tvWelcome = findViewById(R.id.tvWelcome);
-        ivMenu = findViewById(R.id.ivMenu);
+        btnLogout = findViewById(R.id.btnLogout);
 
         // Stat cards
         tvStatNewTodayValue = findViewById(R.id.tvStatNewTodayValue);
@@ -236,9 +238,9 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     }
 
     private void setupClickListeners() {
-        // Menu button
-        ivMenu.setOnClickListener(v -> {
-            showMenuDialog();
+        // Logout button
+        btnLogout.setOnClickListener(v -> {
+            logout();
         });
 
         // Refresh button
@@ -423,19 +425,7 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
     }
 
-    private void showMenuDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Menu");
-        builder.setItems(new String[]{"Logout"}, (dialog, which) -> {
-            if (which == 0) {
-                handleLogout();
-            }
-        });
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
-    }
-
-    private void handleLogout() {
+    private void logout() {
         Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(this, LoginMainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -443,41 +433,80 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         finish();
     }
 
+    private void showReasonDialog(String title, String message, ReasonCallback callback) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        android.view.View dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_reason, null);
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        TextView tvDialogTitle = dialogView.findViewById(R.id.tvDialogTitle);
+        com.google.android.material.textfield.TextInputEditText etReason = dialogView.findViewById(R.id.etReason);
+        android.widget.Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+        android.widget.Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+
+        tvDialogTitle.setText(title);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnConfirm.setOnClickListener(v -> {
+            String reason = etReason.getText().toString().trim();
+            if (reason.isEmpty()) {
+                etReason.setError("Please enter a reason");
+                return;
+            }
+            callback.onReasonEntered(reason);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    interface ReasonCallback {
+        void onReasonEntered(String reason);
+    }
+
     // Ticket action callbacks
     @Override
     public void onAccept(Ticket ticket, int position) {
-        ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
-        pendingTickets.remove(ticket);
-        acceptedTickets.add(ticket);
+        showReasonDialog("Accept Ticket", "Please provide a reason for accepting this ticket:", (reason) -> {
+            ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+            ticket.setReason(reason);
+            pendingTickets.remove(ticket);
+            acceptedTickets.add(ticket);
 
-        ticketAdapter.removeTicket(position);
-        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
-                spamTickets.size(), acceptedTickets.size());
-        updateStatisticsFromTickets();
+            ticketAdapter.removeTicket(position);
+            updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                    spamTickets.size(), acceptedTickets.size());
+            updateStatisticsFromTickets();
 
-        Toast.makeText(this, "Ticket " + ticket.getId() + " accepted", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Ticket " + ticket.getId() + " accepted", Toast.LENGTH_SHORT).show();
 
-        if (ticketAdapter.getItemCount() == 0) {
-            showEmptyState();
-        }
+            if (ticketAdapter.getItemCount() == 0) {
+                showEmptyState();
+            }
+        });
     }
 
     @Override
     public void onReject(Ticket ticket, int position) {
-        ticket.setStatus(Ticket.TicketStatus.REJECTED);
-        pendingTickets.remove(ticket);
-        rejectedTickets.add(ticket);
+        showReasonDialog("Reject Ticket", "Please provide a reason for rejecting this ticket:", (reason) -> {
+            ticket.setStatus(Ticket.TicketStatus.REJECTED);
+            ticket.setReason(reason);
+            pendingTickets.remove(ticket);
+            rejectedTickets.add(ticket);
 
-        ticketAdapter.removeTicket(position);
-        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
-                spamTickets.size(), acceptedTickets.size());
-        updateStatisticsFromTickets();
+            ticketAdapter.removeTicket(position);
+            updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                    spamTickets.size(), acceptedTickets.size());
+            updateStatisticsFromTickets();
 
-        Toast.makeText(this, "Ticket " + ticket.getId() + " rejected", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Ticket " + ticket.getId() + " rejected", Toast.LENGTH_SHORT).show();
 
-        if (ticketAdapter.getItemCount() == 0) {
-            showEmptyState();
-        }
+            if (ticketAdapter.getItemCount() == 0) {
+                showEmptyState();
+            }
+        });
     }
 
     @Override
@@ -495,6 +524,101 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
 
         if (ticketAdapter.getItemCount() == 0) {
             showEmptyState();
+        }
+    }
+
+    @Override
+    public void onView(Ticket ticket, int position) {
+        // Open ticket detail activity
+        Intent intent = new Intent(this, TicketDetailActivity.class);
+        intent.putExtra("ticket_id", ticket.getId());
+        intent.putExtra("type", ticket.getType());
+        intent.putExtra("severity", ticket.getSeverity());
+        intent.putExtra("location", ticket.getLocation());
+        intent.putExtra("date_time", ticket.getDateTime());
+        intent.putExtra("description", ticket.getDescription());
+        intent.putExtra("image_name", ticket.getImageName());
+        intent.putExtra("status", ticket.getStatus().name());
+        intent.putExtra("reason", ticket.getReason());
+        startActivityForResult(intent, 100);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
+            // Get ticket details from result
+            String ticketId = data.getStringExtra("ticket_id");
+            String newStatus = data.getStringExtra("new_status");
+            String reason = data.getStringExtra("reason");
+
+            if (ticketId != null && newStatus != null) {
+                // Find and update the ticket in the appropriate list
+                Ticket ticketToUpdate = findTicketById(ticketId);
+                if (ticketToUpdate != null) {
+                    // Remove from current list
+                    pendingTickets.remove(ticketToUpdate);
+                    acceptedTickets.remove(ticketToUpdate);
+                    rejectedTickets.remove(ticketToUpdate);
+                    spamTickets.remove(ticketToUpdate);
+
+                    // Update ticket status
+                    ticketToUpdate.setStatus(Ticket.TicketStatus.valueOf(newStatus));
+                    if (reason != null) {
+                        ticketToUpdate.setReason(reason);
+                    }
+
+                    // Add to new list based on status
+                    switch (newStatus) {
+                        case "ACCEPTED":
+                            acceptedTickets.add(ticketToUpdate);
+                            Toast.makeText(this, "Ticket " + ticketId + " accepted", Toast.LENGTH_SHORT).show();
+                            break;
+                        case "REJECTED":
+                            rejectedTickets.add(ticketToUpdate);
+                            Toast.makeText(this, "Ticket " + ticketId + " rejected", Toast.LENGTH_SHORT).show();
+                            break;
+                        case "SPAM":
+                            spamTickets.add(ticketToUpdate);
+                            Toast.makeText(this, "Ticket " + ticketId + " marked as spam", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+
+                    // Update UI
+                    updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                            spamTickets.size(), acceptedTickets.size());
+                    updateStatisticsFromTickets();
+                    refreshTicketLists();
+                }
+            }
+        }
+    }
+
+    private Ticket findTicketById(String ticketId) {
+        // Search in all lists
+        for (Ticket ticket : allTickets) {
+            if (ticket.getId().equals(ticketId)) {
+                return ticket;
+            }
+        }
+        return null;
+    }
+
+    private void refreshTicketLists() {
+        // Re-filter and display current tab
+        switch (currentTabIndex) {
+            case 0:
+                selectTab(0);
+                break;
+            case 1:
+                selectTab(1);
+                break;
+            case 2:
+                selectTab(2);
+                break;
+            case 3:
+                selectTab(3);
+                break;
         }
     }
 }

@@ -49,8 +49,23 @@
             android:text="TKT001"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/btnView"
             app:layout_constraintStart_toEndOf="@+id/tvSeverity"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- View Button -->
+        <Button
+            android:id="@+id/btnView"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginEnd="0dp"
+            android:backgroundTint="@color/primary"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="View"
+            android:textColor="@color/white"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Type -->

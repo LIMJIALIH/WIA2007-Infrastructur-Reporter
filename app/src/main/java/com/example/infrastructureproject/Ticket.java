@@ -11,6 +11,7 @@ public class Ticket implements Serializable {
     private String dateTime;
     private String imageName;
     private TicketStatus status;
+    private String reason; // Reason for accept/reject
 
     public enum TicketStatus {
         PENDING,
@@ -29,6 +30,7 @@ public class Ticket implements Serializable {
         this.dateTime = dateTime;
         this.imageName = imageName;
         this.status = TicketStatus.PENDING;
+        this.reason = "";
     }
 
     // Getters and setters
@@ -55,4 +57,12 @@ public class Ticket implements Serializable {
 
     public TicketStatus getStatus() { return status; }
     public void setStatus(TicketStatus status) { this.status = status; }
+    
+    public String getReason() { return reason; }
+    public void setReason(String reason) { this.reason = reason; }
+    
+    // Get image resource ID from image name
+    public int getImageResId(android.content.Context context) {
+        return context.getResources().getIdentifier(imageName, "drawable", context.getPackageName());
+    }
 }

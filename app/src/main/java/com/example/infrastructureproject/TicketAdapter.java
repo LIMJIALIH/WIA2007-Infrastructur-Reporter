@@ -25,6 +25,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         void onAccept(Ticket ticket, int position);
         void onReject(Ticket ticket, int position);
         void onSpam(Ticket ticket, int position);
+        void onView(Ticket ticket, int position);
     }
 
     public TicketAdapter(Context context, OnTicketActionListener listener) {
@@ -74,6 +75,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         Button btnAccept;
         Button btnReject;
         Button btnSpam;
+        Button btnView;
 
         public TicketViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -87,6 +89,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             btnAccept = itemView.findViewById(R.id.btnAccept);
             btnReject = itemView.findViewById(R.id.btnReject);
             btnSpam = itemView.findViewById(R.id.btnSpam);
+            btnView = itemView.findViewById(R.id.btnView);
         }
 
         public void bind(Ticket ticket, int position) {
@@ -141,6 +144,12 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             btnSpam.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onSpam(ticket, position);
+                }
+            });
+            
+            btnView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onView(ticket, position);
                 }
             });
         }

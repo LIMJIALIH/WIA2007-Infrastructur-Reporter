@@ -24,18 +24,21 @@
             android:textColor="@color/text_primary"
             android:textSize="@dimen/text_size_title"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/ivMenu"
+            app:layout_constraintEnd_toStartOf="@+id/btnLogout"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <ImageView
-            android:id="@+id/ivMenu"
-            android:layout_width="@dimen/icon_size_medium"
-            android:layout_height="@dimen/icon_size_medium"
+        <Button
+            android:id="@+id/btnLogout"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginTop="48dp"
             android:layout_marginEnd="@dimen/margin_medium"
-            android:contentDescription="@string/menu_content_description"
-            android:src="@drawable/ic_menu"
+            android:text="Logout"
+            android:textSize="14sp"
+            app:icon="@drawable/ic_logout"
+            app:iconGravity="start"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
