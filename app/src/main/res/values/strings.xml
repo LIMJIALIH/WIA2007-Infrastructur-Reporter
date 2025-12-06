@@ -12,7 +12,9 @@
     <string name="hours_format">&lt; %d hours</string>
 
     <!-- Search and Filter -->
-    <string name="search_hint">Search by type, location, or description…</string>
+    <string name="search_hint">Search for location or description</string>
+    <string name="filter_location">Location</string>
+    <string name="filter_description">Description</string>
     <string name="all_types">All Types</string>
     <string name="all_severities">All Severities</string>
 

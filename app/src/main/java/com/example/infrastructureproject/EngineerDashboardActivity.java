@@ -44,6 +44,12 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     private ImageView ivFilter;
     private Spinner spinnerTypes;
     private Spinner spinnerSeverities;
+    
+    // Search filter buttons
+    private TextView btnFilterLocation;
+    private TextView btnFilterDescription;
+    private boolean isLocationFilterActive = false;
+    private boolean isDescriptionFilterActive = false;
 
     // Tabs
     private TextView tabPendingReview;
@@ -143,6 +149,10 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         ivFilter = findViewById(R.id.ivFilter);
         spinnerTypes = findViewById(R.id.spinnerTypes);
         spinnerSeverities = findViewById(R.id.spinnerSeverities);
+        
+        // Filter buttons
+        btnFilterLocation = findViewById(R.id.btnFilterLocation);
+        btnFilterDescription = findViewById(R.id.btnFilterDescription);
 
         // Tabs
         tabPendingReview = findViewById(R.id.tabPendingReview);
@@ -267,6 +277,19 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
 
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+        
+        // Filter button click listeners
+        btnFilterLocation.setOnClickListener(v -> {
+            isLocationFilterActive = !isLocationFilterActive;
+            updateFilterButtonState(btnFilterLocation, isLocationFilterActive);
+            filterTickets();
+        });
+        
+        btnFilterDescription.setOnClickListener(v -> {
+            isDescriptionFilterActive = !isDescriptionFilterActive;
+            updateFilterButtonState(btnFilterDescription, isDescriptionFilterActive);
+            filterTickets();
         });
     }
 
@@ -398,12 +421,32 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
                     .collect(Collectors.toList());
         }
 
-        // Filter by search query
+        // Filter by search query with location/description filter buttons
         if (!searchQuery.isEmpty()) {
+            // Determine which fields to search based on button states
+            boolean searchLocation = isLocationFilterActive;
+            boolean searchDescription = isDescriptionFilterActive;
+            
+            // If neither button is active, search both (default behavior)
+            if (!searchLocation && !searchDescription) {
+                searchLocation = true;
+                searchDescription = true;
+            }
+            
+            final boolean finalSearchLocation = searchLocation;
+            final boolean finalSearchDescription = searchDescription;
+            
             filteredTickets = filteredTickets.stream()
-                    .filter(t -> t.getType().toLowerCase().contains(searchQuery) ||
-                            t.getLocation().toLowerCase().contains(searchQuery) ||
-                            t.getDescription().toLowerCase().contains(searchQuery))
+                    .filter(t -> {
+                        boolean matches = false;
+                        if (finalSearchLocation) {
+                            matches = matches || t.getLocation().toLowerCase().contains(searchQuery);
+                        }
+                        if (finalSearchDescription) {
+                            matches = matches || t.getDescription().toLowerCase().contains(searchQuery);
+                        }
+                        return matches;
+                    })
                     .collect(Collectors.toList());
         }
 
@@ -441,6 +484,18 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+    
+    private void updateFilterButtonState(TextView button, boolean isActive) {
+        if (isActive) {
+            // Selected state: green background, white text
+            button.setBackgroundResource(R.drawable.bg_filter_button_selected);
+            button.setTextColor(getResources().getColor(R.color.white, null));
+        } else {
+            // Unselected state: white background with border, gray text
+            button.setBackgroundResource(R.drawable.bg_filter_button_unselected);
+            button.setTextColor(getResources().getColor(R.color.text_secondary, null));
+        }
     }
 
     // Ticket action callbacks

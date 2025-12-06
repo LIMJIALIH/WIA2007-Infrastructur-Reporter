@@ -336,6 +336,53 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <!-- Search Filter Buttons (Location/Description) -->
+        <LinearLayout
+            android:id="@+id/searchFilterButtonsContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/margin_medium"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="@dimen/margin_medium"
+            android:orientation="horizontal"
+            android:gravity="start"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/searchFilterContainer">
+
+            <TextView
+                android:id="@+id/btnFilterLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/bg_filter_button_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="@string/filter_location"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp" />
+
+            <TextView
+                android:id="@+id/btnFilterDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_filter_button_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="@string/filter_description"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp" />
+
+        </LinearLayout>
+
         <!-- Filter Dropdowns - Vertical Stack -->
         <LinearLayout
             android:id="@+id/filterDropdownContainer"
@@ -347,7 +394,7 @@
             android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/searchFilterContainer">
+            app:layout_constraintTop_toBottomOf="@+id/searchFilterButtonsContainer">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
