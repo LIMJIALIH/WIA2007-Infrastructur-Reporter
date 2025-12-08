@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -70,7 +71,8 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/card_upload_photo"
             app:layout_constraintHorizontal_chainStyle="spread"
-            app:layout_constraintWidth_percent="0.48">
+            app:layout_constraintWidth_percent="0.48"
+            app:layout_constraintBottom_toTopOf="@id/photo_preview">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -142,7 +144,47 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Photo Preview ImageView -->
+        <ImageView
+            android:id="@+id/photo_preview"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="16dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="#F3F4F6"
+            android:contentDescription="Photo preview"
+            app:layout_constraintTop_toBottomOf="@id/card_take_photo"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- AI Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/ai_loading_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/description_input"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- AI Loading Text -->
+
         <!-- Location label and 'Enter Manually' inline -->
+        <TextView
+            android:id="@+id/ai_loading_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Analyzing image with AI..."
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ai_loading_indicator" />
+
         <TextView
             android:id="@+id/location_label"
             android:layout_width="wrap_content"
@@ -152,7 +194,7 @@
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="#111111"
-            app:layout_constraintTop_toBottomOf="@id/card_take_photo"
+            app:layout_constraintTop_toBottomOf="@id/photo_preview"
             app:layout_constraintStart_toStartOf="parent" />
 
         <TextView
@@ -219,24 +261,78 @@
             android:text="Using default location. Click Enter Manually to specify exact location."
             android:textColor="#5676B8"
             android:textSize="12sp"
-            app:layout_constraintTop_toBottomOf="@id/location_row"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/location_row" />
 
-        <!-- Description label -->
+        <!-- Issue Type Label -->
         <TextView
-            android:id="@+id/description_label"
+            android:id="@+id/type_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Description (Optional)"
+            android:text="Issue Type *"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="#111111"
             app:layout_constraintTop_toBottomOf="@id/location_hint"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <!-- Type Spinner (Dropdown) -->
+        <Spinner
+            android:id="@+id/type_spinner"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="12dp"
+            app:layout_constraintTop_toBottomOf="@id/type_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Severity Label -->
+        <TextView
+            android:id="@+id/severity_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Severity Level *"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            app:layout_constraintTop_toBottomOf="@id/type_spinner"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Severity Spinner (Dropdown) -->
+        <Spinner
+            android:id="@+id/severity_spinner"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="12dp"
+            app:layout_constraintTop_toBottomOf="@id/severity_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Description label -->
+
         <!-- Description input (match constraints to use width) -->
+
+        <TextView
+            android:id="@+id/description_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="16dp"
+            android:text="Description (Optional)"
+            android:textColor="#111111"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/severity_spinner" />
+
+        <!-- Submit button -->
         <EditText
             android:id="@+id/description_input"
             android:layout_width="0dp"
@@ -245,16 +341,18 @@
             android:background="#F9FAFB"
             android:gravity="top|start"
             android:hint="Add any additional details about the issue..."
+            android:inputType="textMultiLine"
             android:padding="12dp"
             android:textColor="#111111"
             android:textColorHint="#999999"
             android:textSize="14sp"
-            android:inputType="textMultiLine"
-            app:layout_constraintTop_toBottomOf="@id/description_label"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/description_label" />
 
-        <!-- Submit button -->
+
+
         <Button
             android:id="@+id/submit_button"
             android:layout_width="0dp"
@@ -266,7 +364,7 @@
             android:textStyle="bold"
             android:textColor="#FFFFFF"
             android:background="@drawable/btn_submit"
-            app:layout_constraintTop_toBottomOf="@id/description_input"
+            app:layout_constraintTop_toBottomOf="@id/ai_loading_text"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 

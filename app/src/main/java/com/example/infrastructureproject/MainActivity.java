@@ -5,14 +5,15 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.example.infrastructurereporter.R;
 import com.google.android.material.button.MaterialButton;
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private CardView selectionBackground;
     private PopupWindow popupWindow;
     private MaterialButton logoutButton;
+    private ReportIssueFragment reportIssueFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,11 +155,21 @@ public class MainActivity extends AppCompatActivity {
         TextView contentTitle = findViewById(R.id.contentTitle);
         TextView refreshButton = findViewById(R.id.refreshButton);
         CardView reportsContainer = findViewById(R.id.reportsContainer);
+        View reportsContainer2 = findViewById(R.id.reportsContainer2);
 
         contentTitle.setText("Your submitted reports");
         contentTitle.setVisibility(View.VISIBLE);
         refreshButton.setVisibility(View.VISIBLE);
         reportsContainer.setVisibility(View.VISIBLE);
+        reportsContainer2.setVisibility(View.GONE); // Hide new reports container
+        
+        // Hide ReportIssueFragment if it exists
+        if (reportIssueFragment != null) {
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.hide(reportIssueFragment);
+            transaction.commit();
+        }
     }
 
     private void showNewReports() {
@@ -165,11 +177,24 @@ public class MainActivity extends AppCompatActivity {
         TextView contentTitle = findViewById(R.id.contentTitle);
         TextView refreshButton = findViewById(R.id.refreshButton);
         CardView reportsContainer = findViewById(R.id.reportsContainer);
-        CardView reportsContainer2 = findViewById(R.id.reportsContainer2);
+        View reportsContainer2 = findViewById(R.id.reportsContainer2);
 
         contentTitle.setVisibility(View.GONE);
         refreshButton.setVisibility(View.GONE); // Hide refresh button
         reportsContainer.setVisibility(View.GONE); // Hide my reports container
         reportsContainer2.setVisibility(View.VISIBLE); // Show new reports container
+        
+        // Show ReportIssueFragment
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        
+        if (reportIssueFragment == null) {
+            reportIssueFragment = ReportIssueFragment.newInstance();
+            transaction.add(R.id.reportsContainer2, reportIssueFragment);
+        } else {
+            transaction.show(reportIssueFragment);
+        }
+        
+        transaction.commit();
     }
 }
