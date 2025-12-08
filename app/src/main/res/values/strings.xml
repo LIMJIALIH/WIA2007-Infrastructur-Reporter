@@ -28,6 +28,7 @@
     <string name="category_facilities">Facilities</string>
 
 
+
     <!-- Severity Levels -->
     <string name="severity_low">Low</string>
     <string name="severity_medium">Medium</string>
@@ -66,7 +67,7 @@
     <string name="camera_permission_required_message">Camera permission is required to take a photo.</string>
 
     <string-array name="issue_types">
-        <item>Select issue types</item>
+        <item>Select Issue Type</item>
         <item>Pothole</item>
         <item>Broken Streetlight</item>
         <item>Damaged Pipe</item>
@@ -74,11 +75,9 @@
     </string-array>
 
     <string-array name="severity_levels">
-        <item>Select severity levels</item>
+        <item>Select Severities</item>
         <item>Low</item>
         <item>Medium</item>
         <item>High</item>
     </string-array>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
