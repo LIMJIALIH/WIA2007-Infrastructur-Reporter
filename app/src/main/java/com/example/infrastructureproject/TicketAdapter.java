@@ -26,6 +26,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         void onReject(Ticket ticket, int position);
         void onSpam(Ticket ticket, int position);
         void onView(Ticket ticket, int position);
+        void onDelete(Ticket ticket, int position);
     }
 
     public TicketAdapter(Context context, OnTicketActionListener listener) {
@@ -76,6 +77,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         Button btnReject;
         Button btnSpam;
         Button btnView;
+        Button btnDelete;
 
         public TicketViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -90,6 +92,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             btnReject = itemView.findViewById(R.id.btnReject);
             btnSpam = itemView.findViewById(R.id.btnSpam);
             btnView = itemView.findViewById(R.id.btnView);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
 
         public void bind(Ticket ticket, int position) {
@@ -128,6 +131,21 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 ivTicketImage.setImageResource(imageResource);
             }
 
+            // Show/hide action buttons based on ticket status
+            // Only show Accept/Reject/Spam buttons for PENDING tickets
+            if (ticket.getStatus() == Ticket.TicketStatus.PENDING) {
+                btnAccept.setVisibility(View.VISIBLE);
+                btnReject.setVisibility(View.VISIBLE);
+                btnSpam.setVisibility(View.VISIBLE);
+                btnDelete.setVisibility(View.GONE);
+            } else {
+                // For processed tickets (Accepted, Rejected, Spam), show delete button
+                btnAccept.setVisibility(View.GONE);
+                btnReject.setVisibility(View.GONE);
+                btnSpam.setVisibility(View.GONE);
+                btnDelete.setVisibility(View.VISIBLE);
+            }
+
             // Set button click listeners
             btnAccept.setOnClickListener(v -> {
                 if (listener != null) {
@@ -144,6 +162,12 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             btnSpam.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onSpam(ticket, position);
+                }
+            });
+            
+            btnDelete.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onDelete(ticket, position);
                 }
             });
             

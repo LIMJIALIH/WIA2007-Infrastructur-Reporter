@@ -611,6 +611,38 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     }
 
     @Override
+    public void onDelete(Ticket ticket, int position) {
+        // Show confirmation dialog before deleting
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Ticket")
+                .setMessage("Are you sure you want to delete ticket " + ticket.getId() + "?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    // Remove from all lists
+                    allTickets.remove(ticket);
+                    pendingTickets.remove(ticket);
+                    acceptedTickets.remove(ticket);
+                    rejectedTickets.remove(ticket);
+                    spamTickets.remove(ticket);
+
+                    // Remove from adapter
+                    ticketAdapter.removeTicket(position);
+
+                    // Update UI
+                    updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                            spamTickets.size(), acceptedTickets.size());
+                    updateStatisticsFromTickets();
+
+                    Toast.makeText(this, "Ticket " + ticket.getId() + " deleted", Toast.LENGTH_SHORT).show();
+
+                    if (ticketAdapter.getItemCount() == 0) {
+                        showEmptyState();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
