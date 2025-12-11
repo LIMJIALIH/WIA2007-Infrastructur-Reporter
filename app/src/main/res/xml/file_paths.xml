@@ -3,3 +3,5 @@
     <cache-path name="camera_images" path="." />
     <external-files-path name="external_files" path="." />
 </paths>
+
+
