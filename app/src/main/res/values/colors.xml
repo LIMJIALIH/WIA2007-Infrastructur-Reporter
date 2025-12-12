@@ -6,4 +6,27 @@
     <color name="blue">#C10623EF</color>
     <color name="green">#C100A008</color>
     <color name="brown">#C1C58400</color>
+    <color name="primary">#1976D2</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="accent">#FF4081</color>
+    <color name="background">#F5F5F5</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="stat_new_today">#2196F3</color>
+    <color name="stat_this_week">#9C27B0</color>
+    <color name="stat_avg_response">#4CAF50</color>
+    <color name="stat_high_priority">#F44336</color>
+    <color name="status_pending">#FFC107</color>
+    <color name="status_rejected">#F44336</color>
+    <color name="status_accepted">#4CAF50</color>
+    <color name="status_spam">#9E9E9E</color>
+    <color name="severity_high">#F44336</color>
+    <color name="severity_medium">#FF9800</color>
+    <color name="severity_low">#2196F3</color>
+    <color name="border_color">#E0E0E0</color>
+    <color name="divider_color">#EEEEEE</color>
+    <color name="tab_selected">#FFFFFF</color>
+    <color name="tab_unselected">#F5F5F5</color>
 </resources>

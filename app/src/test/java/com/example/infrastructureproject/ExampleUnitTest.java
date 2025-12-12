@@ -1,4 +1,4 @@
-package com.example.infrastructurereporter;
+package com.example.infrastructureproject;
 
 import org.junit.Test;
 

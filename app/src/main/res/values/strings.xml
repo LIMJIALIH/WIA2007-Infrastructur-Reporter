@@ -1,3 +1,66 @@
 <resources>
     <string name="app_name">Infrastructure Reporter</string>
+    <string name="login_name">Login Page</string>
+    <string name="engineering_name">Infrastrucuture Reporting App</string>
+    <string name="engineer_dashboard">Engineer Dashboard</string>
+    <string name="welcome_user">Welcome, %s</string>
+
+    <string name="stat_new_today">New Today</string>
+    <string name="stat_this_week">This Week</string>
+    <string name="stat_avg_response">Avg Response</string>
+    <string name="stat_high_priority">High Priority</string>
+    <string name="hours_format">&lt; %d hours</string>
+
+    <!-- Search and Filter -->
+    <string name="search_hint">Search by type, location, or description…</string>
+    <string name="all_types">All Types</string>
+    <string name="all_severities">All Severities</string>
+
+    <!-- Ticket Types -->
+    <string name="type_pothole">Pothole</string>
+    <string name="type_broken_streetlight">Broken Streetlight</string>
+    <string name="type_damaged_pipe">Damaged Pipe</string>
+    <string name="type_other">Other</string>
+    <!-- Main Categories -->
+    <string name="category_road">Road</string>
+    <string name="category_utilities">Utilities</string>
+    <string name="category_environment">Environment</string>
+    <string name="category_facilities">Facilities</string>
+
+
+
+    <!-- Severity Levels -->
+    <string name="severity_low">Low</string>
+    <string name="severity_medium">Medium</string>
+    <string name="severity_high">High</string>
+
+    <!-- Ticket Status -->
+    <string name="all_tickets">All Tickets</string>
+    <string name="pending_review">Pending Review (%d)</string>
+    <string name="rejected">Rejected (%d)</string>
+    <string name="spam">Spam (%d)</string>
+    <string name="accepted">Accepted (%d)</string>
+    <string name="refresh">Refresh</string>
+
+    <!-- Empty State -->
+    <string name="no_pending_tickets">No pending tickets</string>
+    <string name="all_tickets_reviewed">All tickets have been reviewed</string>
+
+    <!-- Menu -->
+    <string name="menu_content_description">Menu</string>
+    <string name="filter_content_description">Filter</string>
+
+    <!-- Ticket Item -->
+    <string name="ticket_image">Ticket image</string>
+    <string name="btn_accept">Accept</string>
+    <string name="btn_reject">Reject</string>
+    <string name="btn_spam">Spam</string>
+
+    <string name="report_issue_name">report_issue</string>
+    <string name="report_infrastructure_issue">Report Infrastructure Issue</string>
+    <string name="capture_a_photo_of_the_problem_and_we_ll_analyze_it_with_ai">Capture a photo of the problem and we\'ll analyze it with AI</string>
+    <string name="photo_of_the_issue">Photo of the Issue *</string>
+    <string name="take_photo">Take Photo</string>
+    <string name="upload_photo">Upload Photo</string>
+    <string name="upload_icon">Upload icon</string>
 </resources>

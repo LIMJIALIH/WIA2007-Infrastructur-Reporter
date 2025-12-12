@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Infrastructure Reporter"
+rootProject.name = "Infrastructure project"
 include(":app")
  

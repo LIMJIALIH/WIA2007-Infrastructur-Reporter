@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -31,12 +32,12 @@
             android:layout_alignParentEnd="true"
             android:background="?attr/selectableItemBackground"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="@android:color/black" />
+            app:tint="@android:color/black" />
 
     </RelativeLayout>
 
     <!-- Chat Messages Area -->
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/chatScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -50,21 +51,30 @@
             android:orientation="vertical">
 
             <!-- Welcome message -->
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
-                android:text="Hello! I'm your AI Assistant. How can I help you with infrastructure reporting today?"
-                android:textSize="14sp"
-                android:textColor="@android:color/black"
-                android:background="#E0E0E0"
-                android:padding="12dp"
+                android:orientation="horizontal"
                 android:layout_margin="8dp"
-                android:maxWidth="400dp"
-                android:elevation="2dp" />
+                android:maxWidth="400dp">
+
+                <TextView
+                    android:id="@+id/welcomeMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hello! I'm your AI Assistant. How can I help you with infrastructure reporting today?"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/black"
+                    android:background="#E0E0E0"
+                    android:padding="12dp"
+                    android:elevation="2dp"
+                    android:layout_marginEnd="8dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- Chat Input Bar -->
     <LinearLayout
@@ -86,7 +96,8 @@
             android:background="@android:color/white"
             android:padding="12dp"
             android:textSize="14sp"
-            android:maxLines="3" />
+            android:maxLines="3"
+            android:inputType="textMultiLine" />
 
         <!-- Send Button -->
         <ImageButton
@@ -96,7 +107,7 @@
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackground"
             android:src="@android:drawable/ic_menu_send"
-            android:tint="@android:color/black" />
+            app:tint="@android:color/black" />
 
     </LinearLayout>
 
