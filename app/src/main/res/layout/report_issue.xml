@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#FFFFFF">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/root"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Report Infrastructure Issue"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/subtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Capture a photo of the problem and we'll analyze it with AI"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            app:layout_constraintTop_toBottomOf="@id/title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Photo section label -->
+        <TextView
+            android:id="@+id/photo_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Photo of the Issue *"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            app:layout_constraintTop_toBottomOf="@id/subtitle"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Cards: Take / Upload side-by-side in a horizontal chain -->
+        <!-- TAKE PHOTO CARD -->
+        <com.google.android.material.card.MaterialCardView
+            app:cardBackgroundColor="#e7e7e7"
+            android:id="@+id/card_take_photo"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="12dp"
+            app:strokeColor="#E6E9EE"
+            app:strokeWidth="1dp"
+            app:cardElevation="2dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintTop_toBottomOf="@id/photo_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/card_upload_photo"
+            app:layout_constraintHorizontal_chainStyle="spread"
+            app:layout_constraintWidth_percent="0.48"
+            app:layout_constraintBottom_toTopOf="@id/photo_preview">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp">
+
+                <ImageView
+                    android:id="@+id/ic_take_photo"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    android:contentDescription="Take photo"
+                    app:tint="#111111" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Take Photo"
+                    android:textSize="14sp"
+                    android:textColor="#111111"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- UPLOAD PHOTO CARD -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_upload_photo"
+            app:cardBackgroundColor="#e7e7e7"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="12dp"
+            app:strokeColor="#E6E9EE"
+            app:strokeWidth="1dp"
+            app:cardElevation="2dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintTop_toBottomOf="@id/photo_label"
+            app:layout_constraintStart_toEndOf="@id/card_take_photo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintWidth_percent="0.48">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp">
+
+                <ImageView
+                    android:id="@+id/ic_upload_photo"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@android:drawable/ic_menu_upload"
+                    android:contentDescription="Upload photo"
+                    app:tint="#111111" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Upload Photo"
+                    android:textSize="14sp"
+                    android:textColor="#111111"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Photo Preview ImageView -->
+        <ImageView
+            android:id="@+id/photo_preview"
+            android:layout_width="0dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="16dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="#F3F4F6"
+            android:contentDescription="Photo preview"
+            app:layout_constraintTop_toBottomOf="@id/card_take_photo"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- AI Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/ai_loading_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/description_input"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- AI Loading Text -->
+
+        <!-- Location label and 'Enter Manually' inline -->
+        <TextView
+            android:id="@+id/ai_loading_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Analyzing image with AI..."
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ai_loading_indicator" />
+
+        <TextView
+            android:id="@+id/location_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Location"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            app:layout_constraintTop_toBottomOf="@id/photo_preview"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/enter_manually"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Enter Manually"
+            android:textColor="#1E88E5"
+            android:textSize="13sp"
+            app:layout_constraintBaseline_toBaselineOf="@id/location_label"
+            app:layout_constraintStart_toEndOf="@id/location_label" />
+
+        <!-- Location pill (full-width) -->
+
+        <ImageView
+            android:id="@+id/edit_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="80dp"
+            android:contentDescription="edit"
+            android:src="@android:drawable/ic_menu_edit"
+            app:layout_constraintBaseline_toBaselineOf="@id/location_label"
+            app:layout_constraintStart_toEndOf="@id/enter_manually"
+            app:tint="#666666" />
+
+        <LinearLayout
+            android:id="@+id/location_row"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:background="#F3F4F6"
+            app:layout_constraintTop_toBottomOf="@id/location_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                android:id="@+id/location_pin"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="8dp"
+                android:src="@android:drawable/ic_dialog_map"
+                android:contentDescription="location"
+                app:tint="#1E88E5" />
+
+            <TextView
+                android:id="@+id/location_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Default Location (Kuala Lumpur)"
+                android:textSize="14sp"
+                android:textColor="#111111" />
+        </LinearLayout>
+
+        <!-- Location hint -->
+        <TextView
+            android:id="@+id/location_hint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Using default location. Click Enter Manually to specify exact location."
+            android:textColor="#5676B8"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/location_row" />
+
+        <!-- Issue Type Label -->
+        <TextView
+            android:id="@+id/type_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Issue Type *"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            app:layout_constraintTop_toBottomOf="@id/location_hint"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Type Spinner (Dropdown) -->
+        <Spinner
+            android:id="@+id/type_spinner"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="12dp"
+            app:layout_constraintTop_toBottomOf="@id/type_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Severity Label -->
+        <TextView
+            android:id="@+id/severity_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Severity Level *"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#111111"
+            app:layout_constraintTop_toBottomOf="@id/type_spinner"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Severity Spinner (Dropdown) -->
+        <Spinner
+            android:id="@+id/severity_spinner"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@android:drawable/btn_dropdown"
+            android:padding="12dp"
+            app:layout_constraintTop_toBottomOf="@id/severity_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Description label -->
+
+        <!-- Description input (match constraints to use width) -->
+
+        <TextView
+            android:id="@+id/description_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="16dp"
+            android:text="Description (Optional)"
+            android:textColor="#111111"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/severity_spinner" />
+
+        <!-- Submit button -->
+        <EditText
+            android:id="@+id/description_input"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="8dp"
+            android:background="#F9FAFB"
+            android:gravity="top|start"
+            android:hint="Add any additional details about the issue..."
+            android:inputType="textMultiLine"
+            android:padding="12dp"
+            android:textColor="#111111"
+            android:textColorHint="#999999"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/description_label" />
+
+
+
+        <Button
+            android:id="@+id/submit_button"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:enabled="false"
+            android:text="Submit Report"
+            android:textAllCaps="false"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/btn_submit"
+            app:layout_constraintTop_toBottomOf="@id/ai_loading_text"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- How it works card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/how_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#EEF2FF"
+            app:cardElevation="0dp"
+            app:layout_constraintTop_toBottomOf="@id/submit_button"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:text="How it works: Your photo will be analyzed by two AI models (ChatGPT, Gemini) to verify it's a real infrastructure issue and determine severity level."
+                android:textSize="12sp"
+                android:textColor="#1F2A44" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Note -->
+        <TextView
+            android:id="@+id/note"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Note: This is a web prototype running in an embedded environment. The actual Android app will have full geolocation access."
+            android:textColor="#666666"
+            android:textSize="12sp"
+            app:layout_constraintTop_toBottomOf="@id/how_card"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>
