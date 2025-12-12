@@ -1,3 +1,72 @@
+<<<<<<< HEAD
+=======
+## **Tech Stack**
+
+### **Platform & Core**
+- **Android:** Java, Gradle Kotlin DSL, compileSdk 36, minSdk 25
+- **Backend:** Supabase (PostgreSQL + Auth + Storage + Realtime)
+- **Push Notifications:** Firebase Cloud Messaging (FCM)
+
+### **Networking & APIs**
+- **HTTP Client:** Retrofit 2.9.0, OkHttp 4.12.0
+- **JSON Parsing:** Gson 2.10.1
+- **AI Services:** OpenAI GPT-4 Vision API, Google Gemini API, OpenAI ChatGPT API
+
+### **Android Libraries**
+- **Image Loading:** Glide 4.16.0
+- **Location:** Google Play Services Location 21.0.1
+- **UI Components:** RecyclerView 1.3.2, CardView 1.0.0, Material Design Components
+
+### **Architecture**
+- **Pattern:** Repository pattern for data access
+- **Authentication:** Session-based with SharedPreferences
+- **Storage:** Supabase Storage for ticket photos
+
+---
+
+## **Backend Work Summary**
+
+### **Person 1: Engineer Dashboard Backend**
+**Creates:** `DashboardRepository.java`, `DashboardStats.java`  
+**Responsibilities:** Fetch dashboard statistics (new today, this week, high priority, avg response), load tickets by status (pending/accepted/rejected/spam), implement search/filter functionality, handle ticket actions (accept/reject/spam) with Supabase API integration.
+
+---
+
+### **Person 2: Citizen Dashboard Backend**
+**Creates:** `CitizenRepository.java`, `CitizenStats.java`, `FCMService.java`  
+**Responsibilities:** Fetch citizen's own tickets from Supabase, calculate personal statistics (total reports, pending, accepted, rejected), filter tickets by status, implement Firebase Cloud Messaging for real-time push notifications when ticket status changes.
+
+---
+
+### **Person 3: Authentication Backend**
+**Creates:** `AuthRepository.java`, `AuthResult.java`  
+**Responsibilities:** Implement Supabase Auth integration (sign up, login, logout), manage session tokens with SharedPreferences, handle role-based authentication (citizen/engineer), provide user ID and role retrieval methods for other modules.
+
+---
+
+### **Person 4: Report Issue Form + AI Backend**
+**Creates:** `AIService.java`, `AIAnalysisResult.java`, `TicketRepository.java`  
+**Responsibilities:** Integrate OpenAI GPT-4 Vision and Google Gemini APIs for image analysis, implement AI consensus logic (type/severity detection), handle photo upload to Supabase Storage, create tickets in database with GPS coordinates and AI confidence scores.
+
+---
+
+### **Person 5: Ticket Components + Location Service**
+**Creates:** `LocationService.java`  
+**Updates:** `Ticket.java` (add backend fields), `TicketAdapter.java` (Glide integration)  
+**Responsibilities:** Update Ticket model with backend-compatible fields (userId, photoUrl, locationLat/Lng, aiConfidence, createdAt, updatedAt), replace local image loading with Glide for remote URLs, implement GPS location service with FusedLocationProviderClient, handle location permissions.
+
+---
+
+### **Person 6: Core Infrastructure + Chatbot + Dependencies**
+**Creates:** `NetworkModule.java`, `ChatbotService.java`, `ChatMessage.java`  
+**Updates:** build.gradle.kts, `local.properties`  
+**Responsibilities:** Set up Supabase client and Retrofit with authentication interceptor, implement OpenAI ChatGPT chatbot service with conversation history, configure all project dependencies (Retrofit, Glide, Firebase, Location Services), create Supabase database schema (users, tickets, ticket_actions tables with RLS policies), set up Supabase Storage bucket for photos, manage API keys configuration.
+
+---
+
+**Note:** All team members work on **separate files** to avoid merge conflicts. Each person creates new backend classes and only edits their own frontend files.s configuration.
+
+>>>>>>> 89b7a4c45b15cdc14b9f255e47afe741be31d08c
 ## **DETAILED BACKEND WORK ALLOCATION (All in One, Separate Files)**
 
 ---
