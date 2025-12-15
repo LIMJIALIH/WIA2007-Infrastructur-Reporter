@@ -1,9 +1,7 @@
 package com.example.infrastructureproject;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -13,53 +11,80 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.infrastructurereporter.R;
-import com.google.android.material.textfield.TextInputEditText;
 
 public class TicketDetailActivity extends AppCompatActivity {
 
-    private ImageView ivBack;
+    // UI Components
     private ImageView ivTicketImage;
     private TextView tvTicketId;
-    private TextView tvSeverity;
     private TextView tvType;
+    private TextView tvSeverity;
+    private TextView tvDescription;
+    private TextView tvStatus;
     private TextView tvLocation;
     private TextView tvDateTime;
-    private TextView tvDescription;
-    private TextView tvReason;
-    private TextView labelReason;
+    private ImageView ivClose;
+
+    private Ticket ticket;
+
+    private boolean isEngineerView = false;
     private Button btnAccept;
     private Button btnReject;
     private Button btnSpam;
-
-    private Ticket ticket;
+    private ImageView ivBack;
+    private TextView tvReason;
+    private TextView labelReason;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_ticket_detail);
+        
+        // Check if opened from engineer dashboard
+        isEngineerView = !getIntent().getBooleanExtra("citizen_view", true);
+        
+        // Load appropriate layout
+        if (isEngineerView) {
+            setContentView(R.layout.activity_ticket_detail_engineer);
+        } else {
+            setContentView(R.layout.activity_ticket_detail);
+        }
 
         initializeViews();
-        loadTicketData();
+        setupTicketData();
         setupListeners();
     }
 
     private void initializeViews() {
-        ivBack = findViewById(R.id.ivBack);
-        ivTicketImage = findViewById(R.id.ivTicketImage);
-        tvTicketId = findViewById(R.id.tvTicketId);
-        tvSeverity = findViewById(R.id.tvSeverity);
-        tvType = findViewById(R.id.tvType);
-        tvLocation = findViewById(R.id.tvLocation);
-        tvDateTime = findViewById(R.id.tvDateTime);
-        tvDescription = findViewById(R.id.tvDescription);
-        tvReason = findViewById(R.id.tvReason);
-        labelReason = findViewById(R.id.labelReason);
-        btnAccept = findViewById(R.id.btnAccept);
-        btnReject = findViewById(R.id.btnReject);
-        btnSpam = findViewById(R.id.btnSpam);
+        if (isEngineerView) {
+            // Engineer view
+            ivTicketImage = findViewById(R.id.ivTicketImage);
+            ivBack = findViewById(R.id.ivBack);
+            tvTicketId = findViewById(R.id.tvTicketId);
+            tvType = findViewById(R.id.tvType);
+            tvSeverity = findViewById(R.id.tvSeverity);
+            tvDescription = findViewById(R.id.tvDescription);
+            tvLocation = findViewById(R.id.tvLocation);
+            tvDateTime = findViewById(R.id.tvDateTime);
+            tvReason = findViewById(R.id.tvReason);
+            labelReason = findViewById(R.id.labelReason);
+            btnAccept = findViewById(R.id.btnAccept);
+            btnReject = findViewById(R.id.btnReject);
+            btnSpam = findViewById(R.id.btnSpam);
+        } else {
+            // Citizen view
+            ivTicketImage = findViewById(R.id.ivTicketImageLarge);
+            tvTicketId = findViewById(R.id.tvTicketId);
+            tvType = findViewById(R.id.tvType);
+            tvSeverity = findViewById(R.id.tvSeverity);
+            tvDescription = findViewById(R.id.tvDescription);
+            tvStatus = findViewById(R.id.tvStatus);
+            tvLocation = findViewById(R.id.tvLocation);
+            tvDateTime = findViewById(R.id.tvDateTime);
+            ivClose = findViewById(R.id.ivClose);
+        }
     }
 
-    private void loadTicketData() {
+    private void setupTicketData() {
         // Get ticket data from intent
         String ticketId = getIntent().getStringExtra("ticket_id");
         String type = getIntent().getStringExtra("type");
@@ -74,41 +99,35 @@ public class TicketDetailActivity extends AppCompatActivity {
         // Create ticket object
         ticket = new Ticket(ticketId, type, severity, location, description, dateTime, imageName);
         if (status != null && !status.isEmpty()) {
-            ticket.setStatus(Ticket.TicketStatus.valueOf(status));
+            try {
+                ticket.setStatus(Ticket.TicketStatus.valueOf(status));
+            } catch (IllegalArgumentException e) {
+                ticket.setStatus(Ticket.TicketStatus.PENDING);
+            }
         }
         if (reason != null && !reason.isEmpty()) {
             ticket.setReason(reason);
         }
 
-        // Display ticket data
+        // Set ticket data
         tvTicketId.setText(ticket.getId());
         tvType.setText(ticket.getType());
-        tvSeverity.setText(ticket.getSeverity());
         tvLocation.setText(ticket.getLocation());
         tvDateTime.setText(ticket.getDateTime());
         tvDescription.setText(ticket.getDescription());
-        
-        // Display reason if available
-        if (ticket.getReason() != null && !ticket.getReason().isEmpty()) {
-            labelReason.setVisibility(View.VISIBLE);
-            tvReason.setVisibility(View.VISIBLE);
-            tvReason.setText(ticket.getReason());
-        } else {
-            labelReason.setVisibility(View.GONE);
-            tvReason.setVisibility(View.GONE);
-        }
-        
-        // Load image
-        int imageResId = ticket.getImageResId(this);
-        if (imageResId != 0) {
-            ivTicketImage.setImageResource(imageResId);
-        }
+        tvSeverity.setText(ticket.getSeverity());
 
         // Set severity background
         setSeverityBackground(ticket.getSeverity());
 
-        // Show/hide buttons based on status
-        updateButtonVisibility();
+        // Set status (only for citizen view)
+        if (!isEngineerView && tvStatus != null && ticket.getStatus() != null) {
+            String statusText = ticket.getStatus().toString();
+            tvStatus.setText(statusText);
+        }
+
+        // Set ticket image
+        setTicketImage();
     }
 
     private void setSeverityBackground(String severity) {
@@ -129,66 +148,134 @@ public class TicketDetailActivity extends AppCompatActivity {
         tvSeverity.setBackgroundResource(backgroundRes);
     }
 
-    private void updateButtonVisibility() {
-        // Hide buttons if ticket is already processed
-        if (ticket.getStatus() != Ticket.TicketStatus.PENDING) {
-            btnAccept.setVisibility(View.GONE);
-            btnReject.setVisibility(View.GONE);
-            btnSpam.setVisibility(View.GONE);
+    private void setTicketImage() {
+        int imageResource = getResources().getIdentifier(
+                ticket.getImageName(),
+                "drawable",
+                getPackageName()
+        );
+        if (imageResource != 0) {
+            ivTicketImage.setImageResource(imageResource);
         }
     }
 
     private void setupListeners() {
-        ivBack.setOnClickListener(v -> finish());
+        if (isEngineerView) {
+            // Engineer view - setup button listeners
+            if (ivBack != null) {
+                ivBack.setOnClickListener(v -> finish());
+            }
 
-        btnAccept.setOnClickListener(v -> showReasonDialog("Accept", "Accept Ticket", (reason) -> {
-            ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
-            ticket.setReason(reason);
-            // Return result with ticket data
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("ticket_id", ticket.getId());
-            resultIntent.putExtra("new_status", "ACCEPTED");
-            resultIntent.putExtra("reason", reason);
-            setResult(RESULT_OK, resultIntent);
-            Toast.makeText(this, "Ticket Accepted", Toast.LENGTH_SHORT).show();
-            finish();
-        }));
+            if (btnAccept != null) {
+                btnAccept.setOnClickListener(v -> showReasonDialog("Accept", "Accept Ticket", (reason) -> {
+                    ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+                    ticket.setReason(reason);
+                    TicketManager.getInstance().updateTicket(ticket);
+                    
+                    // Show reason in UI
+                    if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                    if (tvReason != null) {
+                        tvReason.setVisibility(View.VISIBLE);
+                        tvReason.setText(reason);
+                    }
+                    
+                    // Hide buttons
+                    btnAccept.setVisibility(View.GONE);
+                    btnReject.setVisibility(View.GONE);
+                    btnSpam.setVisibility(View.GONE);
+                    
+                    // Return result
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("ticket_id", ticket.getId());
+                    resultIntent.putExtra("new_status", "ACCEPTED");
+                    resultIntent.putExtra("reason", reason);
+                    setResult(RESULT_OK, resultIntent);
+                    
+                    Toast.makeText(this, "Ticket Accepted", Toast.LENGTH_SHORT).show();
+                }));
+            }
 
-        btnReject.setOnClickListener(v -> showReasonDialog("Reject", "Reject Ticket", (reason) -> {
-            ticket.setStatus(Ticket.TicketStatus.REJECTED);
-            ticket.setReason(reason);
-            // Return result with ticket data
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("ticket_id", ticket.getId());
-            resultIntent.putExtra("new_status", "REJECTED");
-            resultIntent.putExtra("reason", reason);
-            setResult(RESULT_OK, resultIntent);
-            Toast.makeText(this, "Ticket Rejected", Toast.LENGTH_SHORT).show();
-            finish();
-        }));
+            if (btnReject != null) {
+                btnReject.setOnClickListener(v -> showReasonDialog("Reject", "Reject Ticket", (reason) -> {
+                    ticket.setStatus(Ticket.TicketStatus.REJECTED);
+                    ticket.setReason(reason);
+                    TicketManager.getInstance().updateTicket(ticket);
+                    
+                    // Show reason in UI
+                    if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                    if (tvReason != null) {
+                        tvReason.setVisibility(View.VISIBLE);
+                        tvReason.setText(reason);
+                    }
+                    
+                    // Hide buttons
+                    btnAccept.setVisibility(View.GONE);
+                    btnReject.setVisibility(View.GONE);
+                    btnSpam.setVisibility(View.GONE);
+                    
+                    // Return result
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("ticket_id", ticket.getId());
+                    resultIntent.putExtra("new_status", "REJECTED");
+                    resultIntent.putExtra("reason", reason);
+                    setResult(RESULT_OK, resultIntent);
+                    
+                    Toast.makeText(this, "Ticket Rejected", Toast.LENGTH_SHORT).show();
+                }));
+            }
 
-        btnSpam.setOnClickListener(v -> {
-            // No reason needed for spam
-            ticket.setStatus(Ticket.TicketStatus.SPAM);
-            // Return result with ticket data
-            Intent resultIntent = new Intent();
-            resultIntent.putExtra("ticket_id", ticket.getId());
-            resultIntent.putExtra("new_status", "SPAM");
-            setResult(RESULT_OK, resultIntent);
-            Toast.makeText(this, "Marked as Spam", Toast.LENGTH_SHORT).show();
-            finish();
-        });
+            if (btnSpam != null) {
+                btnSpam.setOnClickListener(v -> {
+                    ticket.setStatus(Ticket.TicketStatus.SPAM);
+                    TicketManager.getInstance().updateTicket(ticket);
+                    
+                    // Hide buttons
+                    btnAccept.setVisibility(View.GONE);
+                    btnReject.setVisibility(View.GONE);
+                    btnSpam.setVisibility(View.GONE);
+                    
+                    // Return result
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("ticket_id", ticket.getId());
+                    resultIntent.putExtra("new_status", "SPAM");
+                    setResult(RESULT_OK, resultIntent);
+                    
+                    Toast.makeText(this, "Marked as Spam", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            // Hide buttons if ticket is already processed
+            if (ticket != null && ticket.getStatus() != Ticket.TicketStatus.PENDING) {
+                if (btnAccept != null) btnAccept.setVisibility(View.GONE);
+                if (btnReject != null) btnReject.setVisibility(View.GONE);
+                if (btnSpam != null) btnSpam.setVisibility(View.GONE);
+            }
+
+            // Show reason if exists
+            if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty()) {
+                if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                if (tvReason != null) {
+                    tvReason.setVisibility(View.VISIBLE);
+                    tvReason.setText(ticket.getReason());
+                }
+            }
+        } else {
+            // Citizen view - just close button
+            if (ivClose != null) {
+                ivClose.setOnClickListener(v -> finish());
+            }
+        }
     }
 
     private void showReasonDialog(String action, String title, ReasonCallback callback) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_reason, null);
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_reason, null);
         builder.setView(dialogView);
 
-        AlertDialog dialog = builder.create();
+        android.app.AlertDialog dialog = builder.create();
 
         TextView tvDialogTitle = dialogView.findViewById(R.id.tvDialogTitle);
-        TextInputEditText etReason = dialogView.findViewById(R.id.etReason);
+        android.widget.EditText etReason = dialogView.findViewById(R.id.etReason);
         Button btnCancel = dialogView.findViewById(R.id.btnCancel);
         Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
 

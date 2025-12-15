@@ -20,18 +20,25 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
     private Context context;
     private List<Ticket> tickets;
     private OnTicketActionListener listener;
+    private boolean isEngineerMode;
 
     public interface OnTicketActionListener {
         void onAccept(Ticket ticket, int position);
         void onReject(Ticket ticket, int position);
         void onSpam(Ticket ticket, int position);
         void onView(Ticket ticket, int position);
+        void onDelete(Ticket ticket, int position);
     }
 
     public TicketAdapter(Context context, OnTicketActionListener listener) {
+        this(context, listener, false);
+    }
+
+    public TicketAdapter(Context context, OnTicketActionListener listener, boolean isEngineerMode) {
         this.context = context;
         this.tickets = new ArrayList<>();
         this.listener = listener;
+        this.isEngineerMode = isEngineerMode;
     }
 
     public void setTickets(List<Ticket> tickets) {
@@ -49,7 +56,8 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
     @NonNull
     @Override
     public TicketViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_ticket, parent, false);
+        int layoutId = isEngineerMode ? R.layout.item_ticket_engineer : R.layout.item_ticket;
+        View view = LayoutInflater.from(context).inflate(layoutId, parent, false);
         return new TicketViewHolder(view);
     }
 
@@ -72,9 +80,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         TextView tvLocation;
         TextView tvDateTime;
         TextView tvDescription;
-        Button btnAccept;
-        Button btnReject;
-        Button btnSpam;
+        TextView tvStatus;
         Button btnView;
 
         public TicketViewHolder(@NonNull View itemView) {
@@ -86,9 +92,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             tvLocation = itemView.findViewById(R.id.tvLocation);
             tvDateTime = itemView.findViewById(R.id.tvDateTime);
             tvDescription = itemView.findViewById(R.id.tvDescription);
-            btnAccept = itemView.findViewById(R.id.btnAccept);
-            btnReject = itemView.findViewById(R.id.btnReject);
-            btnSpam = itemView.findViewById(R.id.btnSpam);
+            tvStatus = itemView.findViewById(R.id.tvStatus);
             btnView = itemView.findViewById(R.id.btnView);
         }
 
@@ -128,25 +132,73 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 ivTicketImage.setImageResource(imageResource);
             }
 
-            // Set button click listeners
-            btnAccept.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onAccept(ticket, position);
-                }
-            });
+            // Set status or buttons based on mode
+            if (isEngineerMode) {
+                // Engineer mode - show action buttons
+                Button btnAccept = itemView.findViewById(R.id.btnAccept);
+                Button btnReject = itemView.findViewById(R.id.btnReject);
+                Button btnSpam = itemView.findViewById(R.id.btnSpam);
+                Button btnDelete = itemView.findViewById(R.id.btnDelete);
 
-            btnReject.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onReject(ticket, position);
+                // Show/hide buttons based on ticket status
+                if (ticket.getStatus() == Ticket.TicketStatus.PENDING) {
+                    // Pending - show action buttons, hide delete
+                    if (btnAccept != null) btnAccept.setVisibility(View.VISIBLE);
+                    if (btnReject != null) btnReject.setVisibility(View.VISIBLE);
+                    if (btnSpam != null) btnSpam.setVisibility(View.VISIBLE);
+                    if (btnDelete != null) btnDelete.setVisibility(View.GONE);
+                } else {
+                    // Completed - hide action buttons, show delete
+                    if (btnAccept != null) btnAccept.setVisibility(View.GONE);
+                    if (btnReject != null) btnReject.setVisibility(View.GONE);
+                    if (btnSpam != null) btnSpam.setVisibility(View.GONE);
+                    if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
                 }
-            });
 
-            btnSpam.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onSpam(ticket, position);
+                if (btnAccept != null) {
+                    btnAccept.setOnClickListener(v -> {
+                        if (listener != null) {
+                            listener.onAccept(ticket, position);
+                        }
+                    });
                 }
-            });
+
+                if (btnReject != null) {
+                    btnReject.setOnClickListener(v -> {
+                        if (listener != null) {
+                            listener.onReject(ticket, position);
+                        }
+                    });
+                }
+
+                if (btnSpam != null) {
+                    btnSpam.setOnClickListener(v -> {
+                        if (listener != null) {
+                            listener.onSpam(ticket, position);
+                        }
+                    });
+                }
+
+                if (btnDelete != null) {
+                    btnDelete.setOnClickListener(v -> {
+                        if (listener != null) {
+                            listener.onDelete(ticket, position);
+                        }
+                    });
+                }
+            } else {
+                // Citizen mode - show status text
+                if (tvStatus != null) {
+                    if (ticket.getStatus() != null) {
+                        String statusText = "Status: " + ticket.getStatus().toString();
+                        tvStatus.setText(statusText);
+                    } else {
+                        tvStatus.setText("Status: Pending");
+                    }
+                }
+            }
             
+            // Set view button click listener
             btnView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onView(ticket, position);

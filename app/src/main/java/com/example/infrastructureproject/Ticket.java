@@ -17,7 +17,8 @@ public class Ticket implements Serializable {
         PENDING,
         ACCEPTED,
         REJECTED,
-        SPAM
+        SPAM,
+        UNDER_REVIEW
     }
 
     public Ticket(String id, String type, String severity, String location,

@@ -286,6 +286,7 @@
             android:layout_marginTop="8dp"
             android:background="@android:drawable/btn_dropdown"
             android:padding="12dp"
+            android:entries="@array/issue_types"
             app:layout_constraintTop_toBottomOf="@id/type_label"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -311,6 +312,7 @@
             android:layout_marginTop="8dp"
             android:background="@android:drawable/btn_dropdown"
             android:padding="12dp"
+            android:entries="@array/severity_levels"
             app:layout_constraintTop_toBottomOf="@id/severity_label"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />

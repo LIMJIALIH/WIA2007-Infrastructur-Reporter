@@ -186,7 +186,7 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     }
 
     private void setupRecyclerView() {
-        ticketAdapter = new TicketAdapter(this, this);
+        ticketAdapter = new TicketAdapter(this, this, true); // true = engineer mode
         recyclerViewTickets.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewTickets.setAdapter(ticketAdapter);
         recyclerViewTickets.setNestedScrollingEnabled(false);
@@ -607,7 +607,34 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         intent.putExtra("image_name", ticket.getImageName());
         intent.putExtra("status", ticket.getStatus().name());
         intent.putExtra("reason", ticket.getReason());
+        intent.putExtra("citizen_view", false); // Engineer view!
         startActivityForResult(intent, 100);
+    }
+
+    @Override
+    public void onDelete(Ticket ticket, int position) {
+        // Show delete confirmation dialog
+        new AlertDialog.Builder(this)
+            .setTitle("Delete Ticket")
+            .setMessage("Are you sure you want to delete ticket " + ticket.getId() + "?")
+            .setPositiveButton("DELETE", (dialog, which) -> {
+                // Remove from all lists
+                pendingTickets.remove(ticket);
+                acceptedTickets.remove(ticket);
+                rejectedTickets.remove(ticket);
+                spamTickets.remove(ticket);
+                allTickets.remove(ticket);
+                
+                // Remove from TicketManager
+                TicketManager.getInstance().deleteTicket(ticket.getId());
+                
+                // Refresh current tab
+                selectTab(currentTabIndex);
+                
+                Toast.makeText(this, "Ticket " + ticket.getId() + " deleted", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("CANCEL", null)
+            .show();
     }
 
     @Override
