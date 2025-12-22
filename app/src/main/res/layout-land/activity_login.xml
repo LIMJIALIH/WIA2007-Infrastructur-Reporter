@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    tools:context="com.example.infrastructureproject.LoginMainActivity">
+    tools:context="com.example.infrastructureproject.SignUpActivity">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/main"
@@ -157,16 +157,23 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
-            <EditText
-                android:id="@+id/password_input"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/edit_text_background"
-                android:hint="••••••••"
-                android:inputType="textPassword"
-                android:padding="16dp"
-                android:textSize="16sp" />
+                app:hintEnabled="false"
+                app:passwordToggleEnabled="true">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/password_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:hint="••••••••"
+                    android:inputType="textPassword"
+                    android:padding="16dp"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <TextView
                 android:id="@+id/logging_as_label"
@@ -197,7 +204,8 @@
                     android:padding="12dp"
                     android:text="Citizen"
                     android:textColor="@android:color/white"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/engineer_button"

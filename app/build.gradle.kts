@@ -3,6 +3,7 @@ import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 val localPropsFile = rootProject.file("local.properties")
@@ -12,13 +13,15 @@ val localProps = Properties().apply {
     }
 }
 val geminiKeyFromLocal: String = localProps.getProperty("GEMINI_API_KEY", "")
+val supabaseUrl: String = localProps.getProperty("SUPABASE_URL", "")
+val supabaseKey: String = localProps.getProperty("SUPABASE_KEY", "")
 
 android {
     namespace = "com.example.infrastructurereporter"
     compileSdk = 36
 
     buildFeatures {
-        buildConfig = true   // <-- ENABLE custom BuildConfig fields
+        buildConfig = true
     }
 
     defaultConfig {
@@ -30,14 +33,13 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Expose key from local.properties to BuildConfig for debug/dev.
-        // Must be a Java string literal, so wrap in quotes.
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKeyFromLocal\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
 
     buildTypes {
         getByName("debug") {
-            // debug uses value from defaultConfig (geminiKeyFromLocal)
         }
         getByName("release") {
             isMinifyEnabled = false
@@ -45,14 +47,19 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Override release to an empty string (do NOT ship real key)
             buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+            buildConfigField("String", "SUPABASE_URL", "\"\"")
+            buildConfigField("String", "SUPABASE_KEY", "\"\"")
         }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    
+    kotlinOptions {
+        jvmTarget = "11"
     }
 
     packaging {
@@ -72,6 +79,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation("com.google.genai:google-genai:1.29.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

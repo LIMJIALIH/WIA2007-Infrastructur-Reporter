@@ -21,6 +21,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText emailInput;
     private EditText passwordInput;
     private Button loginButton;
+    private TextView forgotPassword;
     private String selectedRole = "citizen"; // Default role
 
     @Override
@@ -42,8 +43,17 @@ public class LoginActivity extends AppCompatActivity {
         emailInput = findViewById(R.id.email_input);
         passwordInput = findViewById(R.id.password_input);
         loginButton = findViewById(R.id.button);
+        forgotPassword = findViewById(R.id.forgot_password);
 
-        signupTab.setOnClickListener(v -> finish());
+        signupTab.setOnClickListener(v -> {
+            Intent intent = new Intent(this, SignUpActivity.class);
+            startActivity(intent);
+        });
+
+        forgotPassword.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ForgotPasswordActivity.class);
+            startActivity(intent);
+        });
 
         citizenButton.setOnClickListener(v -> {
             selectRole(citizenButton);
@@ -80,22 +90,43 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
+        if (!email.contains("@")) {
+            Toast.makeText(this, "Not a proper email format", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (password.isEmpty()) {
             Toast.makeText(this, "Please enter your password", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Show success message
-        Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+        // Use SupabaseManager to login
+        SupabaseManager.login(email, password, new SupabaseManager.AuthCallback() {
+            @Override
+            public void onSuccess(String role, String fullName) {
+                if (role != null) {
+                    if (role.equalsIgnoreCase(selectedRole)) {
+                         Toast.makeText(LoginActivity.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                         Intent intent;
+                         if (selectedRole.equals("engineer")) {
+                             intent = new Intent(LoginActivity.this, EngineerDashboardActivity.class);
+                         } else {
+                             intent = new Intent(LoginActivity.this, CitizenDashboardActivity.class);
+                         }
+                         startActivity(intent);
+                         finish();
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Role mismatch. Please select the correct role.", Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toast.makeText(LoginActivity.this, "Login successful but role not found.", Toast.LENGTH_SHORT).show();
+                }
+            }
 
-        // Navigate based on selected role
-        Intent intent;
-        if (selectedRole.equals("engineer")) {
-            intent = new Intent(this, EngineerDashboardActivity.class);
-        } else {
-            intent = new Intent(this, MainActivity.class);
-        }
-        startActivity(intent);
-        finish(); // Close the login activity
+            @Override
+            public void onError(String message) {
+                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

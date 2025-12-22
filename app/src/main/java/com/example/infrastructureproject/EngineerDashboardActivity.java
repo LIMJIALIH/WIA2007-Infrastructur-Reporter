@@ -7,7 +7,6 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -20,7 +19,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.textfield.TextInputEditText;
 import com.example.infrastructurereporter.R;
 
 import java.util.ArrayList;
@@ -120,7 +118,7 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
             e.printStackTrace();
             Toast.makeText(this, "Error loading dashboard: " + e.getMessage(), Toast.LENGTH_LONG).show();
             // Navigate back to login on error
-            Intent intent = new Intent(this, LoginMainActivity.class);
+            Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
             finish();
         }
@@ -312,8 +310,12 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         updateStatisticsFromTickets();
 
         // Set welcome message with username
-        String username = "ongyihao100";
-        tvWelcome.setText(String.format(getString(R.string.welcome_user), username));
+        String fullName = SupabaseManager.getCurrentFullName();
+        if (fullName != null && !fullName.isEmpty()) {
+            if (tvWelcome != null) {
+                tvWelcome.setText("Welcome, " + fullName);
+            }
+        }
 
         // Update tab counts
         updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
@@ -481,8 +483,9 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     }
 
     private void logout() {
+        SupabaseManager.logout();
         Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(this, LoginMainActivity.class);
+        Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

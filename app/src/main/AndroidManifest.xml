@@ -17,7 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.InfrastructureReporter">
         <activity
-            android:name="com.example.infrastructureproject.LoginMainActivity"
+            android:name="com.example.infrastructureproject.SignUpActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,7 +29,7 @@
             android:name="com.example.infrastructureproject.LoginActivity"
             android:exported="false" />
         <activity
-            android:name="com.example.infrastructureproject.MainActivity"
+            android:name="com.example.infrastructureproject.CitizenDashboardActivity"
             android:exported="false" />
         <activity
             android:name="com.example.infrastructureproject.EngineerDashboardActivity"
@@ -40,6 +40,21 @@
         <activity
             android:name="com.example.infrastructureproject.ReportIssueActivity"
             android:exported="false" />
+        <activity
+            android:name="com.example.infrastructureproject.ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.infrastructureproject.ResetPasswordActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="infrastructurereporter"
+                    android:host="reset-password" />
+            </intent-filter>
+        </activity>
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -51,7 +66,5 @@
                 android:resource="@xml/file_paths" />
         </provider>
     </application>
-
-
 
 </manifest>

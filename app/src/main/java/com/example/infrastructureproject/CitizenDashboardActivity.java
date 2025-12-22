@@ -33,11 +33,10 @@ import androidx.cardview.widget.CardView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.core.widget.NestedScrollView;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class CitizenDashboardActivity extends AppCompatActivity {
     private TextView myReportsButton;
     private TextView newReportsButton;
     private CardView selectionBackground;
@@ -52,12 +51,13 @@ public class MainActivity extends AppCompatActivity {
     private CardView reportsContainer;
     private View reportsContainer2;
     private ReportIssueFragment reportIssueFragment;
+    private TextView tvWelcome; // Added welcome text view reference
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_citizen_dashboard);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -85,6 +85,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Load initial data
         updateDashboardCounts();
+        
+        // Set welcome message
+        updateWelcomeMessage();
     }
 
     private void initializeViews() {
@@ -93,6 +96,9 @@ public class MainActivity extends AppCompatActivity {
         card2Number = findViewById(R.id.card2Number);
         card3Number = findViewById(R.id.card3Number);
         card4Number = findViewById(R.id.card4Number);
+        
+        // Welcome Text View
+        tvWelcome = findViewById(R.id.text);
 
         // Refresh button
         refreshButton = findViewById(R.id.refreshButton);
@@ -111,6 +117,15 @@ public class MainActivity extends AppCompatActivity {
         myReportsButton = findViewById(R.id.myReportsButton);
         newReportsButton = findViewById(R.id.newReportsButton);
         selectionBackground = findViewById(R.id.selectionBackground);
+    }
+    
+    private void updateWelcomeMessage() {
+        String fullName = SupabaseManager.getCurrentFullName();
+        if (fullName != null && !fullName.isEmpty()) {
+            if (tvWelcome != null) {
+                tvWelcome.setText("Welcome, " + fullName);
+            }
+        }
     }
 
     private void setupRecyclerView() {
@@ -138,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onView(Ticket ticket, int position) {
                 // Open ticket details
-                Intent intent = new Intent(MainActivity.this, TicketDetailActivity.class);
+                Intent intent = new Intent(CitizenDashboardActivity.this, TicketDetailActivity.class);
                 intent.putExtra("ticket_id", ticket.getId());
                 intent.putExtra("type", ticket.getType());
                 intent.putExtra("severity", ticket.getSeverity());
@@ -210,8 +225,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleLogout() {
+        SupabaseManager.logout();
         Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(this, LoginMainActivity.class);
+        Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

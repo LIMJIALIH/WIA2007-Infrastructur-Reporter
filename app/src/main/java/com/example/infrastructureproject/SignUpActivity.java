@@ -13,22 +13,22 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.infrastructurereporter.R;
 
-public class LoginMainActivity extends AppCompatActivity {
+public class SignUpActivity extends AppCompatActivity {
 
     private TextView loginTab;
-    private TextView signupTab;
     private TextView citizenButton;
     private TextView engineerButton;
     private EditText fullNameInput;
     private EditText emailInput;
     private EditText passwordInput;
+    private EditText confirmPasswordInput;
     private Button signUpButton;
     private String selectedRole = "citizen"; // Default role
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // enableEdgeToEdge(); // This method is not available in the Java Activity template.
+
         setContentView(R.layout.activity_sign_up);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             v.setPadding(insets.getInsets(WindowInsetsCompat.Type.systemBars()).left,
@@ -39,12 +39,12 @@ public class LoginMainActivity extends AppCompatActivity {
         });
 
         loginTab = findViewById(R.id.login_tab);
-        signupTab = findViewById(R.id.signup_tab);
         citizenButton = findViewById(R.id.citizen_button);
         engineerButton = findViewById(R.id.engineer_button);
         fullNameInput = findViewById(R.id.full_name_input);
         emailInput = findViewById(R.id.email_input);
         passwordInput = findViewById(R.id.password_input);
+        confirmPasswordInput = findViewById(R.id.confirm_password_input);
         signUpButton = findViewById(R.id.button);
 
         loginTab.setOnClickListener(v -> {
@@ -81,6 +81,7 @@ public class LoginMainActivity extends AppCompatActivity {
         String fullName = fullNameInput.getText().toString().trim();
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
+        String confirmPassword = confirmPasswordInput.getText().toString().trim();
 
         // Basic validation
         if (fullName.isEmpty()) {
@@ -93,22 +94,46 @@ public class LoginMainActivity extends AppCompatActivity {
             return;
         }
 
+        if (!email.contains("@")) {
+            Toast.makeText(this, "Not a proper email format", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (password.isEmpty()) {
             Toast.makeText(this, "Please enter a password", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Show success message
-        Toast.makeText(this, "Sign up successful!", Toast.LENGTH_SHORT).show();
-
-        // Navigate based on selected role
-        Intent intent;
-        if (selectedRole.equals("engineer")) {
-            intent = new Intent(this, EngineerDashboardActivity.class);
-        } else {
-            intent = new Intent(this, MainActivity.class);
+        if (confirmPassword.isEmpty()) {
+            Toast.makeText(this, "Please confirm your password", Toast.LENGTH_SHORT).show();
+            return;
         }
-        startActivity(intent);
-        finish(); // Close the signup activity
+
+        if (!password.equals(confirmPassword)) {
+            Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Use SupabaseManager to sign up
+        SupabaseManager.signUp(email, password, fullName, selectedRole, new SupabaseManager.AuthCallback() {
+            @Override
+            public void onSuccess(String role, String fullName) {
+                Toast.makeText(SignUpActivity.this, "Sign up successful!", Toast.LENGTH_SHORT).show();
+                
+                Intent intent;
+                if (selectedRole.equals("engineer")) {
+                    intent = new Intent(SignUpActivity.this, EngineerDashboardActivity.class);
+                } else {
+                    intent = new Intent(SignUpActivity.this, CitizenDashboardActivity.class);
+                }
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(SignUpActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }
