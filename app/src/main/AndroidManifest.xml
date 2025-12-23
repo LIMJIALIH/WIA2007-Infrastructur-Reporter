@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -39,7 +44,8 @@
             android:exported="false" />
         <activity
             android:name="com.example.infrastructureproject.ReportIssueActivity"
-            android:exported="false" />
+            android:exported="false"
+            tools:ignore="MissingClass" />
         <activity
             android:name="com.example.infrastructureproject.ForgotPasswordActivity"
             android:exported="false" />
@@ -50,11 +56,21 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="infrastructurereporter"
-                    android:host="reset-password" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="reset-password"
+                    tools:ignore="AppLinkUrlError" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="infrastructurereporter" />
+                <data android:host="reset-password" />
             </intent-filter>
         </activity>
+        <activity android:name="com.example.infrastructureproject.ChatBotMainActivity"
+        android:exported="false"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

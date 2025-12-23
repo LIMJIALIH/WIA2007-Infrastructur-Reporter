@@ -243,7 +243,9 @@ public class CitizenDashboardActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showAIAssistantPopup();
+                Intent intent = new Intent(CitizenDashboardActivity.this, ChatBotMainActivity.class);
+                startActivity(intent);
+//                showAIAssistantPopup();
             }
         });
 
@@ -268,32 +270,32 @@ public class CitizenDashboardActivity extends AppCompatActivity {
         });
     }
 
-    private void showAIAssistantPopup() {
-        // Inflate the popup layout
-        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        View popupView = inflater.inflate(R.layout.popup_ai_assistant, null);
-
-        // Calculate popup dimensions (90% of screen)
-        int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
-        int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.8);
-
-        // Create popup window
-        final PopupWindow aiPopupWindow = new PopupWindow(popupView, width, height, true);
-        aiPopupWindow.setElevation(20f);
-        aiPopupWindow.setBackgroundDrawable(getResources().getDrawable(android.R.drawable.dialog_frame));
-
-        // Set close button listener
-        ImageButton closeButton = popupView.findViewById(R.id.closeButton);
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                aiPopupWindow.dismiss();
-            }
-        });
-
-        // Show popup centered on screen
-        aiPopupWindow.showAtLocation(findViewById(R.id.main), Gravity.CENTER, 0, 0);
-    }
+//    private void showAIAssistantPopup() {
+//        // Inflate the popup layout
+//        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+//        View popupView = inflater.inflate(R.layout.popup_ai_assistant, null);
+//
+//        // Calculate popup dimensions (90% of screen)
+//        int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.9);
+//        int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.8);
+//
+//        // Create popup window
+//        final PopupWindow aiPopupWindow = new PopupWindow(popupView, width, height, true);
+//        aiPopupWindow.setElevation(20f);
+//        aiPopupWindow.setBackgroundDrawable(getResources().getDrawable(android.R.drawable.dialog_frame));
+//
+//        // Set close button listener
+//        ImageButton closeButton = popupView.findViewById(R.id.closeButton);
+//        closeButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                aiPopupWindow.dismiss();
+//            }
+//        });
+//
+//        // Show popup centered on screen
+//        aiPopupWindow.showAtLocation(findViewById(R.id.main), Gravity.CENTER, 0, 0);
+//    }
     private void setSelectedButton(TextView selectedButton) {
         // Update text colors and styles
         if (selectedButton == myReportsButton) {

@@ -34,6 +34,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKeyFromLocal\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.0-flash-exp\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
@@ -48,6 +49,7 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+            buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.0-flash-exp\"")
             buildConfigField("String", "SUPABASE_URL", "\"\"")
             buildConfigField("String", "SUPABASE_KEY", "\"\"")
         }
@@ -78,8 +80,12 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
-    implementation("com.google.genai:google-genai:1.29.0")
-
+    implementation("com.google.genai:google-genai:1.32.0")
+    implementation(libs.generativeai)
+//    implementation(libs.firebase.crashlytics.buildtools)
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("com.google.guava:guava:33.5.0-android")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

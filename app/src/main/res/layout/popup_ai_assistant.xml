@@ -7,13 +7,11 @@
     android:background="@android:color/white"
     android:padding="16dp">
 
-    <!-- Header -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp">
 
-        <!-- Title -->
         <TextView
             android:id="@+id/popupTitle"
             android:layout_width="wrap_content"
@@ -24,7 +22,6 @@
             android:textColor="@android:color/black"
             android:layout_centerInParent="true" />
 
-        <!-- Close Button -->
         <ImageButton
             android:id="@+id/closeButton"
             android:layout_width="30dp"
@@ -36,38 +33,15 @@
 
     </RelativeLayout>
 
-    <!-- Chat Messages Area -->
-    <ScrollView
-        android:id="@+id/chatScrollView"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatRecycleView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="8dp">
+        android:padding="8dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
 
-        <LinearLayout
-            android:id="@+id/chatContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- Welcome message -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:text="Hello! I'm your AI Assistant. How can I help you with infrastructure reporting today?"
-                android:textSize="14sp"
-                android:textColor="@android:color/black"
-                android:background="#E0E0E0"
-                android:padding="12dp"
-                android:layout_margin="8dp"
-                android:maxWidth="400dp"
-                android:elevation="2dp" />
-
-        </LinearLayout>
-    </ScrollView>
-
-    <!-- Chat Input Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -77,7 +51,6 @@
         android:background="#F5F5F5"
         android:layout_marginTop="8dp">
 
-        <!-- Message Input -->
         <EditText
             android:id="@+id/chatInput"
             android:layout_width="0dp"
@@ -89,7 +62,6 @@
             android:textSize="14sp"
             android:maxLines="3" />
 
-        <!-- Send Button -->
         <ImageButton
             android:id="@+id/sendButton"
             android:layout_width="48dp"

@@ -3,7 +3,7 @@ package com.example.infrastructureproject;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import com.example.infrastructurereporter.BuildConfig;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;

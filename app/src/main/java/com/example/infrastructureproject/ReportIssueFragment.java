@@ -41,10 +41,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.example.infrastructurereporter.BuildConfig;
-
-
-
 
 public class ReportIssueFragment extends Fragment {
 
