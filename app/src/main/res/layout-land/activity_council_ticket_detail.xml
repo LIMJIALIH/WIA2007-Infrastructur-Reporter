@@ -216,7 +216,6 @@
                         android:text="Large pothole on main road causing traffic hazard"
                         android:textColor="@color/text_primary"
                         android:textSize="12sp" />
-
                     <!-- Assigned Engineer -->
                     <TextView
                         android:id="@+id/tvAssignedTo"
@@ -227,6 +226,26 @@
                         android:textColor="@color/stat_new_today"
                         android:textSize="12sp"
                         android:textStyle="bold"
+                        android:visibility="gone" />
+                    <!-- Council Notes/Instructions -->
+                    <TextView
+                        android:id="@+id/tvCouncilNotesLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="Council Notes:"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvCouncilNotes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:textColor="#2196F3"
+                        android:textSize="12sp"
                         android:visibility="gone" />
 
                 </LinearLayout>

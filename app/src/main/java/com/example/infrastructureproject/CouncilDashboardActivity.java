@@ -112,6 +112,9 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
 
             // Load initial data
             loadDashboardData();
+            
+            // Display user's full name
+            displayUserWelcome();
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Error loading dashboard: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -196,6 +199,15 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         recyclerViewTickets.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewTickets.setAdapter(ticketAdapter);
         recyclerViewTickets.setNestedScrollingEnabled(false);
+    }
+    
+    private void displayUserWelcome() {
+        String fullName = SupabaseManager.getCurrentFullName();
+        if (fullName != null && !fullName.isEmpty()) {
+            tvWelcome.setText("Welcome, " + fullName);
+        } else {
+            tvWelcome.setText("Welcome, Council Member");
+        }
     }
 
     private void setupData() {

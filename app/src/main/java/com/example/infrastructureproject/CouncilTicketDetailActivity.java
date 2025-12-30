@@ -29,6 +29,8 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private TextView tvTimestamp;
     private TextView tvDescription;
     private TextView tvUsername;
+    private TextView tvCouncilNotesLabel;
+    private TextView tvCouncilNotes;
     private TextView tvAssignedTo;
     private Button btnMarkAsSpam;
     private Button btnAssignToEngineer;
@@ -70,6 +72,8 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         tvTimestamp = findViewById(R.id.tvTimestamp);
         tvDescription = findViewById(R.id.tvDescription);
         tvUsername = findViewById(R.id.tvUsername);
+        tvCouncilNotesLabel = findViewById(R.id.tvCouncilNotesLabel);
+        tvCouncilNotes = findViewById(R.id.tvCouncilNotes);
         tvAssignedTo = findViewById(R.id.tvAssignedTo);
         btnMarkAsSpam = findViewById(R.id.btnMarkAsSpam);
         btnAssignToEngineer = findViewById(R.id.btnAssignToEngineer);
@@ -125,6 +129,17 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         // Check if ticket is completed and show assigned engineer
         TicketManager ticketManager = TicketManager.getInstance();
         Ticket ticket = ticketManager.getTicketById(ticketId);
+        
+        // Show council notes if they exist
+        if (ticket != null && ticket.getCouncilNotes() != null && !ticket.getCouncilNotes().isEmpty()) {
+            tvCouncilNotesLabel.setVisibility(View.VISIBLE);
+            tvCouncilNotes.setVisibility(View.VISIBLE);
+            tvCouncilNotes.setText(ticket.getCouncilNotes());
+        } else {
+            tvCouncilNotesLabel.setVisibility(View.GONE);
+            tvCouncilNotes.setVisibility(View.GONE);
+        }
+        
         if (ticket != null && ticket.getStatus() == Ticket.TicketStatus.ACCEPTED && ticket.getAssignedTo() != null) {
             tvAssignedTo.setText("Assigned to: " + ticket.getAssignedTo());
             tvAssignedTo.setVisibility(View.VISIBLE);
@@ -230,6 +245,10 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
             if (ticket != null) {
                 ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
                 ticket.setAssignedTo(selectedEngineer[0].getName());
+                // Save council notes/instructions
+                if (!instructions.isEmpty()) {
+                    ticket.setCouncilNotes(instructions);
+                }
                 ticketManager.updateTicket(ticket);
             }
             

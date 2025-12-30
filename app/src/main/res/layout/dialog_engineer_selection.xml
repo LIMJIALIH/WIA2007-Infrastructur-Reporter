@@ -30,12 +30,17 @@
         <ListView
             android:id="@+id/lvEngineers"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="300dp"
             android:layout_marginTop="16dp"
             android:divider="@android:color/transparent"
             android:dividerHeight="8dp"
             android:nestedScrollingEnabled="true"
-            android:scrollbars="vertical"
+            android:scrollbars="vertical" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="Instructions for Engineer (Optional)"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
@@ -88,4 +93,3 @@
     </LinearLayout>
 
 </ScrollView>
-

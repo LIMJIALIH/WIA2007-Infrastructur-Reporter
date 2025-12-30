@@ -14,6 +14,7 @@ public class Ticket implements Serializable {
     private TicketStatus status;
     private String reason; // Reason for accept/reject
     private String assignedTo; // Engineer assigned to
+    private String councilNotes; // Additional notes from council
 
     public enum TicketStatus {
         PENDING,
@@ -87,6 +88,9 @@ public class Ticket implements Serializable {
     
     public String getAssignedTo() { return assignedTo; }
     public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
+    
+    public String getCouncilNotes() { return councilNotes; }
+    public void setCouncilNotes(String councilNotes) { this.councilNotes = councilNotes; }
     
     // Get image resource ID from image name
     public int getImageResId(android.content.Context context) {

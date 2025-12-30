@@ -219,6 +219,27 @@
                     android:textStyle="bold"
                     android:visibility="gone" />
 
+                <!-- Council Notes/Instructions -->
+                <TextView
+                    android:id="@+id/tvCouncilNotesLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Council Notes:"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvCouncilNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="#2196F3"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
