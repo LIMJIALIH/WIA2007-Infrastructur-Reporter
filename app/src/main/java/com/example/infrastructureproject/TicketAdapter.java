@@ -190,7 +190,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 // Citizen mode - show status text
                 if (tvStatus != null) {
                     if (ticket.getStatus() != null) {
-                        String statusText = "Status: " + ticket.getStatus().toString();
+                        String statusText = "Status: " + ticket.getStatusDisplayText();
                         tvStatus.setText(statusText);
                     } else {
                         tvStatus.setText("Status: Pending");

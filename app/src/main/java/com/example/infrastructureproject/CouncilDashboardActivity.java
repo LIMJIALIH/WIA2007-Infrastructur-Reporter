@@ -128,21 +128,23 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         spamTickets = new ArrayList<>();
         currentDisplayedTickets = new ArrayList<>();
 
-        // Load mock data
-        allTickets = MockDataGenerator.generateMockTickets();
+        // Load data from TicketManager singleton
+        TicketManager ticketManager = TicketManager.getInstance();
+        allTickets = ticketManager.getAllTickets();
 
-        // Distribute tickets
-        for (int i = 0; i < allTickets.size(); i++) {
-            Ticket ticket = allTickets.get(i);
-            if (i % 5 == 0) {
-                // 20% spam
-                spamTickets.add(ticket);
-            } else if (i % 3 == 0) {
-                // ~33% completed
-                completedTickets.add(ticket);
-            } else {
-                // Rest pending
-                pendingTickets.add(ticket);
+        // Distribute tickets based on actual status
+        for (Ticket ticket : allTickets) {
+            switch (ticket.getStatus()) {
+                case PENDING:
+                    pendingTickets.add(ticket);
+                    break;
+                case ACCEPTED:
+                    completedTickets.add(ticket);
+                    break;
+                case REJECTED:
+                case SPAM:
+                    spamTickets.add(ticket);
+                    break;
             }
         }
     }
@@ -379,8 +381,18 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         tvStatHighPriorityValue.setText(String.valueOf(highPriorityPending));
         tvStatAvgResponseValue.setText("2.5 hrs");
 
+        // Update tab buttons with counts
+        updateTabCounts();
+
         // Load pending tickets by default
         switchTab(2);
+    }
+
+    private void updateTabCounts() {
+        tabTotalReports.setText("Total Reports (" + allTickets.size() + ")");
+        tabCompleted.setText("Completed (" + completedTickets.size() + ")");
+        tabPending.setText("Pending (" + pendingTickets.size() + ")");
+        tabSpam.setText("Spam (" + spamTickets.size() + ")");
     }
 
     private void filterTickets() {
@@ -441,8 +453,8 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         currentDisplayedTickets = filtered;
         ticketAdapter.setTickets(filtered);
         
-        // Update ticket count
-        tvAllTickets.setText("All Tickets (" + filtered.size() + ")");
+        // Update ticket count - show just "All Tickets" without count
+        tvAllTickets.setText("All Tickets");
 
         // Show/hide empty state
         if (filtered.isEmpty()) {
@@ -513,7 +525,10 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh data when returning to activity
+        // Reload data from TicketManager to get updated counts
+        initializeDataLists();
+        // Refresh dashboard with updated data
+        loadDashboardData();
         filterTickets();
     }
 }

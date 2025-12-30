@@ -207,42 +207,21 @@
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
+                <!-- Assigned Engineer -->
+                <TextView
+                    android:id="@+id/tvAssignedTo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Assigned to: John Doe"
+                    android:textColor="@color/stat_new_today"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
-
-        <!-- Assignment Section -->
-        <LinearLayout
-            android:id="@+id/assignmentSection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="vertical">
-
-            <!-- Instructions for Engineer -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Instructions for Engineer (Optional)"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/etInstructions"
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/edit_text_background"
-                android:gravity="top|start"
-                android:hint="Provide any additional instructions for the engineer..."
-                android:inputType="textMultiLine"
-                android:padding="12dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:textSize="14sp" />
-
-        </LinearLayout>
 
         <!-- Action Buttons -->
         <LinearLayout

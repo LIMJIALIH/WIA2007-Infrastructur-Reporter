@@ -13,6 +13,7 @@ public class Ticket implements Serializable {
     private String username;
     private TicketStatus status;
     private String reason; // Reason for accept/reject
+    private String assignedTo; // Engineer assigned to
 
     public enum TicketStatus {
         PENDING,
@@ -64,8 +65,28 @@ public class Ticket implements Serializable {
     public TicketStatus getStatus() { return status; }
     public void setStatus(TicketStatus status) { this.status = status; }
     
+    // Get display-friendly status text
+    public String getStatusDisplayText() {
+        if (status == null) return "Pending";
+        switch (status) {
+            case ACCEPTED:
+                return "Completed";
+            case REJECTED:
+            case SPAM:
+                return "SPAM";
+            case UNDER_REVIEW:
+                return "Under Review";
+            case PENDING:
+            default:
+                return "Pending";
+        }
+    }
+    
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+    
+    public String getAssignedTo() { return assignedTo; }
+    public void setAssignedTo(String assignedTo) { this.assignedTo = assignedTo; }
     
     // Get image resource ID from image name
     public int getImageResId(android.content.Context context) {

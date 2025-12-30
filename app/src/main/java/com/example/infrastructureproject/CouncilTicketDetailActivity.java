@@ -29,10 +29,10 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private TextView tvTimestamp;
     private TextView tvDescription;
     private TextView tvUsername;
+    private TextView tvAssignedTo;
     private Button btnMarkAsSpam;
     private Button btnAssignToEngineer;
-    private LinearLayout assignmentSection;
-    private EditText etInstructions;
+    private LinearLayout actionButtonsLayout;
 
     private String ticketId;
     private String ticketType;
@@ -70,10 +70,12 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         tvTimestamp = findViewById(R.id.tvTimestamp);
         tvDescription = findViewById(R.id.tvDescription);
         tvUsername = findViewById(R.id.tvUsername);
+        tvAssignedTo = findViewById(R.id.tvAssignedTo);
         btnMarkAsSpam = findViewById(R.id.btnMarkAsSpam);
         btnAssignToEngineer = findViewById(R.id.btnAssignToEngineer);
-        assignmentSection = findViewById(R.id.assignmentSection);
-        etInstructions = findViewById(R.id.etInstructions);
+        
+        // Get the action buttons container
+        actionButtonsLayout = (LinearLayout) btnAssignToEngineer.getParent();
     }
 
     private void getTicketDataFromIntent() {
@@ -119,6 +121,29 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         if (ticketImageResId != 0) {
             ivTicketImage.setImageResource(ticketImageResId);
         }
+
+        // Check if ticket is completed and show assigned engineer
+        TicketManager ticketManager = TicketManager.getInstance();
+        Ticket ticket = ticketManager.getTicketById(ticketId);
+        if (ticket != null && ticket.getStatus() == Ticket.TicketStatus.ACCEPTED && ticket.getAssignedTo() != null) {
+            tvAssignedTo.setText("Assigned to: " + ticket.getAssignedTo());
+            tvAssignedTo.setVisibility(View.VISIBLE);
+            // Hide action buttons when ticket is already assigned
+            if (actionButtonsLayout != null) {
+                actionButtonsLayout.setVisibility(View.GONE);
+            }
+        } else if (ticket != null && ticket.getStatus() == Ticket.TicketStatus.SPAM) {
+            // Hide action buttons when ticket is marked as spam
+            tvAssignedTo.setVisibility(View.GONE);
+            if (actionButtonsLayout != null) {
+                actionButtonsLayout.setVisibility(View.GONE);
+            }
+        } else {
+            tvAssignedTo.setVisibility(View.GONE);
+            if (actionButtonsLayout != null) {
+                actionButtonsLayout.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     private void setupClickListeners() {
@@ -140,6 +165,13 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
                 .setTitle("Mark as Spam")
                 .setMessage("Are you sure you want to mark this ticket as spam? This action cannot be undone.")
                 .setPositiveButton("Yes, Mark as Spam", (dialog, which) -> {
+                    // Update ticket status to SPAM using TicketManager
+                    TicketManager ticketManager = TicketManager.getInstance();
+                    Ticket ticket = ticketManager.getTicketById(ticketId);
+                    if (ticket != null) {
+                        ticket.setStatus(Ticket.TicketStatus.SPAM);
+                        ticketManager.updateTicket(ticket);
+                    }
                     // TODO: Implement Supabase spam marking
                     Toast.makeText(this, "Ticket marked as spam", Toast.LENGTH_SHORT).show();
                     finish();
@@ -191,6 +223,16 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
             }
 
             String instructions = etInstructionsDialog.getText().toString().trim();
+            
+            // Update ticket status to ACCEPTED (Completed) using TicketManager
+            TicketManager ticketManager = TicketManager.getInstance();
+            Ticket ticket = ticketManager.getTicketById(ticketId);
+            if (ticket != null) {
+                ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+                ticket.setAssignedTo(selectedEngineer[0].getName());
+                ticketManager.updateTicket(ticket);
+            }
+            
             // TODO: Implement Supabase assignment with instructions
             Toast.makeText(this, "Ticket assigned to " + selectedEngineer[0].getName(), Toast.LENGTH_SHORT).show();
             dialog.dismiss();
