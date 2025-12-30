@@ -3,6 +3,8 @@ package com.example.infrastructureproject;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,6 +28,9 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.example.infrastructurereporter.R;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
@@ -40,6 +45,8 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Locale;
 
 import com.example.infrastructurereporter.BuildConfig;
 
@@ -56,6 +63,9 @@ public class ReportIssueFragment extends Fragment {
     private ActivityResultLauncher<Uri> takePictureLauncher;
     private ActivityResultLauncher<String> permissionLauncher;
     private ActivityResultLauncher<String> cameraPermissionLauncher;
+
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
+    private FusedLocationProviderClient fusedLocationClient;
     private Uri selectedImageUri;
     private Uri capturedImageUri;
     private ImageView previewImageView;
@@ -95,12 +105,20 @@ public class ReportIssueFragment extends Fragment {
         locationTextView = rootView.findViewById(R.id.location_text);
         loadingIndicator = rootView.findViewById(R.id.ai_loading_indicator);
         loadingText = rootView.findViewById(R.id.ai_loading_text);
+
         
         // Setup dropdown spinners
         setupSpinner();
         
         // Setup image handlers for the upload and take photo cards to work
         setupImageHandlers();
+
+        // initialize location client
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        requestLocationPermission();
+        View locationRow = rootView.findViewById(R.id.location_row);
+        locationRow.setOnClickListener(v -> requestLocationPermission());
+
         
         return rootView;
     }
@@ -207,6 +225,93 @@ public class ReportIssueFragment extends Fragment {
                     }
                 }
         );
+
+//        register location permission launcher
+        locationPermissionLauncher =registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result ->{
+                    Boolean fineLocation = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                    Boolean coarseLocation = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+
+                    if (fineLocation || coarseLocation){
+                        getCurrentLocation();
+                    }
+                    else{
+                        Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT).show();
+                    }
+
+                }
+        );
+    }
+
+    private void requestLocationPermission(){
+        if(ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED){
+            getCurrentLocation();
+        }
+        else{
+            locationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        }
+    }
+
+    @SuppressWarnings("MissingPermission")
+    private void getCurrentLocation(){
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+                .addOnSuccessListener(requireActivity(), location -> {
+                    if (location != null){
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+
+                        getAddressFromLocation(latitude, longitude);
+                    }
+                    else{
+                        Toast.makeText(requireContext(), "Unable to get location", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e->{
+                    Log.e("location","error getting location : "+ e.getMessage());
+                    Toast.makeText(requireContext(),"failed to get location",Toast.LENGTH_SHORT).show();
+                });
+    }
+//    method to convert latitude and longitude to a readable address
+    private void getAddressFromLocation(double latitude, double longitude) {
+        Geocoder geocoder = new Geocoder(requireContext(), Locale.getDefault());
+
+        try{
+            List<Address> addresses = geocoder.getFromLocation(latitude,longitude,1);
+            if (addresses != null  && !addresses.isEmpty()){
+                Address address = addresses.get(0);
+
+                StringBuilder addressText = new StringBuilder();
+                for(int i = 0; i<= address.getMaxAddressLineIndex();i++){
+                    addressText.append(address.getAddressLine(i));
+                    if (i < address.getMaxAddressLineIndex()){
+                        addressText.append(", ");
+                    }
+                }
+
+                if(getActivity()!= null){
+                    getActivity().runOnUiThread(()->{
+                        locationTextView.setText(addressText.toString());
+                    });
+                }
+            }
+            else{
+                String coords = String.format(Locale.getDefault(), "%.6f, %.6f", latitude, longitude);
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> locationTextView.setText(coords));
+                }
+            }
+        } catch (IOException e) {
+            Log.e("geocode","error "+e.getMessage());
+            String coords = String.format(Locale.getDefault(),"%.6f, %.6f",latitude,longitude);
+            if(getActivity()!= null){
+                getActivity().runOnUiThread(()-> locationTextView.setText(coords));
+            }
+        }
     }
 
     private void launchGalleryPicker(){
@@ -288,16 +393,12 @@ public class ReportIssueFragment extends Fragment {
                        "description", ImmutableMap.of(
                            "type", "string",
                            "description", "Detailed description of the infrastructure issue"
-                       ),
-                       "location", ImmutableMap.of(
-                           "type", "string",
-                           "description", "Location or landmark visible in the image"
                        )
                    ),
-                   "required", ImmutableList.of("issue_type", "severity", "description", "location")
+                   "required", ImmutableList.of("issue_type", "severity", "description")
                );
 
-               // response to use JSON schema
+               // response to use json schema
                GenerateContentConfig config = GenerateContentConfig.builder()
                        .responseMimeType("application/json")
                        .candidateCount(1)
@@ -327,7 +428,7 @@ public class ReportIssueFragment extends Fragment {
                    });
                }
                
-               // Parse JSON and autofill form
+               // Parse json and autofill form
                parseAndAutofillForm(jsonResponse);
            }
            catch (java.net.UnknownHostException | java.net.SocketTimeoutException e){
@@ -392,11 +493,7 @@ public class ReportIssueFragment extends Fragment {
                     if (!description.isEmpty() && descriptionEditText != null) {
                         descriptionEditText.setText(description);
                     }
-                    
-                    // Set location
-                    if (!location.isEmpty() && locationTextView != null) {
-                        locationTextView.setText(location);
-                    }
+
                     
                     Toast.makeText(requireContext(), 
                         "Form autofilled with AI analysis", 
