@@ -18,6 +18,7 @@ public class SignUpActivity extends AppCompatActivity {
     private TextView loginTab;
     private TextView citizenButton;
     private TextView engineerButton;
+    private TextView councilButton;
     private EditText fullNameInput;
     private EditText emailInput;
     private EditText passwordInput;
@@ -41,6 +42,7 @@ public class SignUpActivity extends AppCompatActivity {
         loginTab = findViewById(R.id.login_tab);
         citizenButton = findViewById(R.id.citizen_button);
         engineerButton = findViewById(R.id.engineer_button);
+        councilButton = findViewById(R.id.council_button);
         fullNameInput = findViewById(R.id.full_name_input);
         emailInput = findViewById(R.id.email_input);
         passwordInput = findViewById(R.id.password_input);
@@ -55,13 +57,22 @@ public class SignUpActivity extends AppCompatActivity {
         citizenButton.setOnClickListener(v -> {
             selectRole(citizenButton);
             deselectRole(engineerButton);
+            deselectRole(councilButton);
             selectedRole = "citizen";
         });
 
         engineerButton.setOnClickListener(v -> {
             selectRole(engineerButton);
             deselectRole(citizenButton);
+            deselectRole(councilButton);
             selectedRole = "engineer";
+        });
+
+        councilButton.setOnClickListener(v -> {
+            selectRole(councilButton);
+            deselectRole(citizenButton);
+            deselectRole(engineerButton);
+            selectedRole = "council";
         });
 
         signUpButton.setOnClickListener(v -> handleSignUp());
@@ -123,6 +134,8 @@ public class SignUpActivity extends AppCompatActivity {
                 Intent intent;
                 if (selectedRole.equals("engineer")) {
                     intent = new Intent(SignUpActivity.this, EngineerDashboardActivity.class);
+                } else if (selectedRole.equals("council")) {
+                    intent = new Intent(SignUpActivity.this, CouncilDashboardActivity.class);
                 } else {
                     intent = new Intent(SignUpActivity.this, CitizenDashboardActivity.class);
                 }

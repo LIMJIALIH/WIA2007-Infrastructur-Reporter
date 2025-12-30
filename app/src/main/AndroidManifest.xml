@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -40,12 +42,14 @@
             android:name="com.example.infrastructureproject.EngineerDashboardActivity"
             android:exported="false" />
         <activity
-            android:name="com.example.infrastructureproject.TicketDetailActivity"
+            android:name="com.example.infrastructureproject.CouncilDashboardActivity"
             android:exported="false" />
         <activity
-            android:name="com.example.infrastructureproject.ReportIssueActivity"
-            android:exported="false"
-            tools:ignore="MissingClass" />
+            android:name="com.example.infrastructureproject.CouncilTicketDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.infrastructureproject.TicketDetailActivity"
+            android:exported="false" />
         <activity
             android:name="com.example.infrastructureproject.ForgotPasswordActivity"
             android:exported="false" />

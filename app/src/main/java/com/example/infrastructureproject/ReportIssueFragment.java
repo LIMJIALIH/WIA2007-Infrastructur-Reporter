@@ -15,8 +15,10 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.AdapterView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -26,6 +28,9 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.example.infrastructurereporter.R;
+import com.example.infrastructureproject.models.Ticket;
+import com.example.infrastructureproject.repository.TicketRepository;
+import com.example.infrastructureproject.utils.LocationHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
@@ -57,8 +62,21 @@ public class ReportIssueFragment extends Fragment {
     private ImageView previewImageView;
     private ProgressBar loadingIndicator;
     private TextView loadingText;
+    private Button submitButton;
     private Client client;
     private String reportIssuePrompt = "Analyze this infrastructure image and identify: 1) Issue type (Pothole, Broken Streetlight, Damaged Pipe, or Other), 2) Severity level (Low, Medium, or High), 3) Detailed description of the problem, 4) Estimated location or landmark visible in the image. Provide accurate infrastructure assessment.";
+    
+    // Location tracking
+    private Double currentLatitude;
+    private Double currentLongitude;
+    private boolean usingManualLocation = false;
+    private LocationHelper locationHelper;
+    private ActivityResultLauncher<String> locationPermissionLauncher;
+    
+    // Supabase
+    private TicketRepository ticketRepository;
+    private String userToken = "YOUR_USER_TOKEN_HERE"; // TODO: Get from auth system
+    private String userId = "YOUR_USER_ID_HERE"; // TODO: Get from auth system
     
     private View rootView;
 
@@ -79,6 +97,22 @@ public class ReportIssueFragment extends Fragment {
         this.client = Client.builder()
                 .apiKey(apiKey)
                 .build();
+        
+        // Initialize repository and location helper
+        this.ticketRepository = new TicketRepository();
+        this.locationHelper = new LocationHelper(requireActivity());
+        
+        // Location permission launcher
+        locationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        fetchCurrentLocation();
+                    } else {
+                        Toast.makeText(requireContext(), "Location permission denied. Using default location.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
     }
 
     @Override
@@ -91,14 +125,83 @@ public class ReportIssueFragment extends Fragment {
         locationTextView = rootView.findViewById(R.id.location_text);
         loadingIndicator = rootView.findViewById(R.id.ai_loading_indicator);
         loadingText = rootView.findViewById(R.id.ai_loading_text);
+        submitButton = rootView.findViewById(R.id.submit_button);
         
         // Setup dropdown spinners
         setupSpinner();
         
         // Setup image handlers for the upload and take photo cards to work
         setupImageHandlers();
+        // Setup submit button behavior
+        setupSubmitButton();
+        // Setup location handlers
+        setupLocationHandlers();
         
         return rootView;
+    }
+
+    private void setupSubmitButton(){
+        // Spinner selection changes affect submit button state
+        if(typeSpinner != null){
+            typeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    updateSubmitButtonState();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    updateSubmitButtonState();
+                }
+            });
+        }
+
+        if(severitySpinner != null){
+            severitySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    updateSubmitButtonState();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    updateSubmitButtonState();
+                }
+            });
+        }
+
+        // Initial state
+        updateSubmitButtonState();
+
+        if(submitButton != null){
+            submitButton.setOnClickListener(v -> {
+                // Gather form data
+                String issueType = (typeSpinner != null) ? typeSpinner.getSelectedItem().toString() : "";
+                String severity = (severitySpinner != null) ? severitySpinner.getSelectedItem().toString() : "";
+                String description = (descriptionEditText != null) ? descriptionEditText.getText().toString() : "";
+                String location = (locationTextView != null) ? locationTextView.getText().toString() : "";
+
+                // Simple validation (defensive)
+                if(selectedImageUri == null || (typeSpinner != null && typeSpinner.getSelectedItemPosition() == 0) || (severitySpinner != null && severitySpinner.getSelectedItemPosition() == 0)){
+                    Toast.makeText(requireContext(), "Please provide a photo, issue type and severity.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Submit to Supabase
+                submitTicketToSupabase(issueType, severity, description, location);
+            });
+        }
+    }
+
+    private void updateSubmitButtonState(){
+        boolean hasPhoto = selectedImageUri != null;
+        boolean typeSelected = typeSpinner != null && typeSpinner.getSelectedItemPosition() > 0;
+        boolean severitySelected = severitySpinner != null && severitySpinner.getSelectedItemPosition() > 0;
+
+        boolean enabled = hasPhoto && typeSelected && severitySelected;
+        if(submitButton != null){
+            submitButton.setEnabled(enabled);
+        }
     }
 
     private void setupSpinner() {
@@ -162,7 +265,10 @@ public class ReportIssueFragment extends Fragment {
                         if(uri != null){
                             selectedImageUri = uri;
                             showPreview(uri);
+                            updateSubmitButtonState();
                             callGeminiAPI(selectedImageUri, reportIssuePrompt);
+                            // Automatically fetch current location after selecting photo
+                            autoFetchLocationAfterPhoto();
                         }
                     }
                 }
@@ -175,7 +281,10 @@ public class ReportIssueFragment extends Fragment {
                     if(success && capturedImageUri != null){
                         selectedImageUri = capturedImageUri;
                         showPreview(capturedImageUri);
+                        updateSubmitButtonState();
                         callGeminiAPI(capturedImageUri, reportIssuePrompt);
+                        // Automatically fetch current location after taking photo
+                        autoFetchLocationAfterPhoto();
                     }
                 }
         );
@@ -397,6 +506,8 @@ public class ReportIssueFragment extends Fragment {
                     Toast.makeText(requireContext(), 
                         "Form autofilled with AI analysis", 
                         Toast.LENGTH_SHORT).show();
+                    // Update submit button state in case AI filled required fields
+                    updateSubmitButtonState();
                 });
             }
             
@@ -451,5 +562,196 @@ public class ReportIssueFragment extends Fragment {
             bytesRes = byteBuffer.toByteArray();
         }
         return bytesRes;
+    }
+    
+    // ========== LOCATION HANDLING ==========
+    
+    private void setupLocationHandlers() {
+        TextView enterManuallyBtn = rootView.findViewById(R.id.enter_manually);
+        
+        if (enterManuallyBtn != null) {
+            enterManuallyBtn.setOnClickListener(v -> {
+                // Show dialog to enter location manually
+                showManualLocationDialog();
+            });
+        }
+        
+        // Don't auto-fetch location on load, wait for photo to be taken
+        // Just show a placeholder message
+        if (locationTextView != null) {
+            locationTextView.setText("Location will be detected after taking a photo");
+        }
+    }
+    
+    private void fetchCurrentLocation() {
+        locationHelper.getCurrentLocation(new LocationHelper.LocationCallback() {
+            @Override
+            public void onLocationReceived(double latitude, double longitude, String address) {
+                currentLatitude = latitude;
+                currentLongitude = longitude;
+                usingManualLocation = false;
+                
+                if (locationTextView != null) {
+                    locationTextView.setText(address);
+                }
+                Toast.makeText(requireContext(), "Location updated", Toast.LENGTH_SHORT).show();
+            }
+            
+            @Override
+            public void onLocationError(String error) {
+                Log.e("ReportIssue", "Location error: " + error);
+                // Fallback to default
+                locationTextView.setText("Default Location (Kuala Lumpur)");
+                currentLatitude = 3.1390;
+                currentLongitude = 101.6869;
+            }
+        });
+    }
+    
+    private void autoFetchLocationAfterPhoto() {
+        if (LocationHelper.hasLocationPermission(requireActivity())) {
+            // Permission already granted, fetch location
+            locationHelper.getCurrentLocation(new LocationHelper.LocationCallback() {
+                @Override
+                public void onLocationReceived(double latitude, double longitude, String address) {
+                    currentLatitude = latitude;
+                    currentLongitude = longitude;
+                    usingManualLocation = false;
+                    
+                    if (locationTextView != null) {
+                        locationTextView.setText(address);
+                    }
+                }
+                
+                @Override
+                public void onLocationError(String error) {
+                    Log.e("ReportIssue", "Location error: " + error);
+                    if (locationTextView != null) {
+                        locationTextView.setText("Unable to get current location");
+                    }
+                }
+            });
+        } else {
+            // Request permission
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+    }
+    
+    private void showManualLocationDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        builder.setTitle("Enter Location");
+        
+        final EditText input = new EditText(requireContext());
+        input.setHint("e.g., Jalan Gasing, Petaling Jaya");
+        builder.setView(input);
+        
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String manualLocation = input.getText().toString().trim();
+            if (!manualLocation.isEmpty()) {
+                locationTextView.setText(manualLocation);
+                usingManualLocation = true;
+                // Clear GPS coordinates when manual
+                currentLatitude = null;
+                currentLongitude = null;
+                Toast.makeText(requireContext(), "Manual location set", Toast.LENGTH_SHORT).show();
+            }
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+    
+    // ========== SUPABASE SUBMISSION ==========
+    
+    private void submitTicketToSupabase(String issueType, String severity, String description, String location) {
+        // Disable button during submission
+        submitButton.setEnabled(false);
+        
+        // Show loading
+        if (loadingIndicator != null) loadingIndicator.setVisibility(View.VISIBLE);
+        if (loadingText != null) {
+            loadingText.setText("Submitting report...");
+            loadingText.setVisibility(View.VISIBLE);
+        }
+        
+        // Run in background thread
+        new Thread(() -> {
+            try {
+                // Create ticket object
+                Ticket ticket = new Ticket(
+                    userId,
+                    issueType,
+                    severity,
+                    location,
+                    currentLatitude,
+                    currentLongitude,
+                    description
+                );
+                
+                // Insert ticket to database
+                Ticket createdTicket = ticketRepository.createTicket(ticket, userToken);
+                
+                // Upload image
+                String imagePath = ticketRepository.uploadImage(
+                    selectedImageUri, 
+                    createdTicket.getId(), 
+                    userToken, 
+                    requireContext()
+                );
+                
+                // Save image metadata
+                String filename = imagePath.substring(imagePath.lastIndexOf("/") + 1);
+                ticketRepository.saveImageMetadata(
+                    createdTicket.getId(),
+                    imagePath,
+                    filename,
+                    userId,
+                    userToken
+                );
+                
+                // Success - update UI on main thread
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (loadingIndicator != null) loadingIndicator.setVisibility(View.GONE);
+                        if (loadingText != null) loadingText.setVisibility(View.GONE);
+                        
+                        Toast.makeText(requireContext(), 
+                            "Report submitted successfully! Ticket: " + createdTicket.getTicketId(), 
+                            Toast.LENGTH_LONG).show();
+                        
+                        // Clear form
+                        clearForm();
+                        submitButton.setEnabled(true);
+                    });
+                }
+                
+            } catch (Exception e) {
+                Log.e("ReportIssue", "Submit failed: " + e.getMessage(), e);
+                
+                // Show error on main thread
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (loadingIndicator != null) loadingIndicator.setVisibility(View.GONE);
+                        if (loadingText != null) loadingText.setVisibility(View.GONE);
+                        
+                        Toast.makeText(requireContext(), 
+                            "Failed to submit: " + e.getMessage(), 
+                            Toast.LENGTH_LONG).show();
+                        
+                        submitButton.setEnabled(true);
+                    });
+                }
+            }
+        }).start();
+    }
+    
+    private void clearForm() {
+        // Reset form after successful submission
+        if (typeSpinner != null) typeSpinner.setSelection(0);
+        if (severitySpinner != null) severitySpinner.setSelection(0);
+        if (descriptionEditText != null) descriptionEditText.setText("");
+        if (previewImageView != null) previewImageView.setVisibility(View.GONE);
+        selectedImageUri = null;
+        updateSubmitButtonState();
     }
 }

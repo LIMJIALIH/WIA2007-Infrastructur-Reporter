@@ -258,7 +258,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Using default location. Click Enter Manually to specify exact location."
+            android:text="Location will be automatically detected. Click Enter Manually to specify a different location."
             android:textColor="#5676B8"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"

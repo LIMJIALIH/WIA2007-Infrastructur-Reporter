@@ -10,6 +10,7 @@ public class Ticket implements Serializable {
     private String description;
     private String dateTime;
     private String imageName;
+    private String username;
     private TicketStatus status;
     private String reason; // Reason for accept/reject
 
@@ -30,6 +31,7 @@ public class Ticket implements Serializable {
         this.description = description;
         this.dateTime = dateTime;
         this.imageName = imageName;
+        this.username = "Anonymous";
         this.status = TicketStatus.PENDING;
         this.reason = "";
     }
@@ -55,6 +57,9 @@ public class Ticket implements Serializable {
 
     public String getImageName() { return imageName; }
     public void setImageName(String imageName) { this.imageName = imageName; }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
     public TicketStatus getStatus() { return status; }
     public void setStatus(TicketStatus status) { this.status = status; }
