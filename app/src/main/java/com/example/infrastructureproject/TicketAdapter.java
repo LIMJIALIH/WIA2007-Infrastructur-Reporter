@@ -1,6 +1,10 @@
 package com.example.infrastructureproject;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -126,14 +130,21 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
             }
             tvSeverity.setBackgroundResource(severityBg);
 
-            // Set ticket image
-            int imageResource = context.getResources().getIdentifier(
-                    ticket.getImageName(),
-                    "drawable",
-                    context.getPackageName()
-            );
-            if (imageResource != 0) {
-                ivTicketImage.setImageResource(imageResource);
+            // Set ticket image from URL or fallback to drawable
+            if (ticket.getImageUrl() != null && !ticket.getImageUrl().isEmpty()) {
+                loadImageThumbnail(ticket.getImageUrl(), ivTicketImage);
+            } else {
+                // Fallback to drawable for old tickets
+                int imageResource = context.getResources().getIdentifier(
+                        ticket.getImageName(),
+                        "drawable",
+                        context.getPackageName()
+                );
+                if (imageResource != 0) {
+                    ivTicketImage.setImageResource(imageResource);
+                } else {
+                    ivTicketImage.setImageResource(R.drawable.ic_image_placeholder);
+                }
             }
 
             // Set status or buttons based on mode
@@ -209,5 +220,29 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 }
             });
         }
+    }
+
+    // Load image thumbnail from Supabase URL
+    private void loadImageThumbnail(String imageUrl, ImageView imageView) {
+        // Set placeholder while loading
+        imageView.setImageResource(R.drawable.ic_image_placeholder);
+        
+        // Load image in background thread
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(imageUrl);
+                Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                
+                // Update UI on main thread
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (bitmap != null) {
+                        imageView.setImageBitmap(bitmap);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                // Keep placeholder on error
+            }
+        }).start();
     }
 }
