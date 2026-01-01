@@ -155,6 +155,7 @@ public class TicketRepository {
                     
                     // Convert JSON to Ticket object
                     String ticketId = ticketJson.optString("ticket_id", "");
+                    String dbId = ticketJson.optString("id", "");
                     String type = ticketJson.optString("issue_type", "Other");
                     String severity = ticketJson.optString("severity", "Low");
                     String location = ticketJson.optString("location", "Unknown");
@@ -172,11 +173,17 @@ public class TicketRepository {
                         location,
                         description,
                         formattedDate,
-                        "" // image name - will be loaded separately if needed
+                        "" // image name - will be set from image URL
                     );
                     
                     // Set status
                     ticket.setStatus(parseStatus(status));
+                    
+                    // Fetch image URL for this ticket
+                    String imageUrl = getTicketImageUrl(dbId);
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
+                        ticket.setImageUrl(imageUrl);
+                    }
                     
                     tickets.add(ticket);
                 }
@@ -192,6 +199,34 @@ public class TicketRepository {
                 }
             }
         }).start();
+    }
+    
+    /**
+     * Get the image URL for a ticket from ticket_images table
+     */
+    private static String getTicketImageUrl(String ticketDbId) {
+        try {
+            String url = BuildConfig.SUPABASE_URL + "/rest/v1/ticket_images?ticket_id=eq." + ticketDbId + "&select=path";
+            
+            String response = SupabaseManager.makeHttpRequest(
+                "GET",
+                url,
+                null,
+                SupabaseManager.getAccessToken()
+            );
+            
+            JSONArray imagesArray = new JSONArray(response);
+            if (imagesArray.length() > 0) {
+                String imagePath = imagesArray.getJSONObject(0).optString("path", "");
+                if (!imagePath.isEmpty()) {
+                    // Return full public URL
+                    return BuildConfig.SUPABASE_URL + "/storage/v1/object/public/ticket-images/" + imagePath;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error fetching image URL", e);
+        }
+        return null;
     }
     
     /**

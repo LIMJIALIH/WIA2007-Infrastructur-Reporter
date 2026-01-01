@@ -10,6 +10,7 @@ public class Ticket implements Serializable {
     private String description;
     private String dateTime;
     private String imageName;
+    private String imageUrl; // Full URL to image in Supabase Storage
     private String username;
     private TicketStatus status;
     private String reason; // Reason for accept/reject
@@ -59,6 +60,9 @@ public class Ticket implements Serializable {
 
     public String getImageName() { return imageName; }
     public void setImageName(String imageName) { this.imageName = imageName; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

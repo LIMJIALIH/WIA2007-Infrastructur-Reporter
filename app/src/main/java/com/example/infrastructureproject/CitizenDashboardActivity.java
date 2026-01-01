@@ -162,6 +162,7 @@ public class CitizenDashboardActivity extends AppCompatActivity {
                 intent.putExtra("date_time", ticket.getDateTime());
                 intent.putExtra("description", ticket.getDescription());
                 intent.putExtra("image_name", ticket.getImageName());
+                intent.putExtra("image_url", ticket.getImageUrl()); // Pass image URL
                 intent.putExtra("status", ticket.getStatus().toString());
                 intent.putExtra("citizen_view", true);
                 if (ticket.getReason() != null) {

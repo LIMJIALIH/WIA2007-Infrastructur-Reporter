@@ -93,11 +93,15 @@ public class TicketDetailActivity extends AppCompatActivity {
         String dateTime = getIntent().getStringExtra("date_time");
         String description = getIntent().getStringExtra("description");
         String imageName = getIntent().getStringExtra("image_name");
+        String imageUrl = getIntent().getStringExtra("image_url"); // Get image URL
         String status = getIntent().getStringExtra("status");
         String reason = getIntent().getStringExtra("reason");
 
         // Create ticket object
         ticket = new Ticket(ticketId, type, severity, location, description, dateTime, imageName);
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            ticket.setImageUrl(imageUrl);
+        }
         if (status != null && !status.isEmpty()) {
             try {
                 ticket.setStatus(Ticket.TicketStatus.valueOf(status));
@@ -149,6 +153,13 @@ public class TicketDetailActivity extends AppCompatActivity {
     }
 
     private void setTicketImage() {
+        // First try to load from URL if available
+        if (ticket.getImageUrl() != null && !ticket.getImageUrl().isEmpty()) {
+            loadImageFromUrl(ticket.getImageUrl());
+            return;
+        }
+        
+        // Fallback to drawable resource (for old tickets)
         int imageResource = getResources().getIdentifier(
                 ticket.getImageName(),
                 "drawable",
@@ -157,6 +168,29 @@ public class TicketDetailActivity extends AppCompatActivity {
         if (imageResource != 0) {
             ivTicketImage.setImageResource(imageResource);
         }
+    }
+    
+    private void loadImageFromUrl(String imageUrl) {
+        // Load image from URL in background thread
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(imageUrl);
+                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                
+                // Update UI on main thread
+                runOnUiThread(() -> {
+                    if (bitmap != null && ivTicketImage != null) {
+                        ivTicketImage.setImageBitmap(bitmap);
+                    }
+                });
+            } catch (Exception e) {
+                android.util.Log.e("TicketDetail", "Error loading image from URL: " + e.getMessage(), e);
+                // Fallback to placeholder or default image
+                runOnUiThread(() -> {
+                    // Could set a placeholder image here if needed
+                });
+            }
+        }).start();
     }
 
     private void setupListeners() {
