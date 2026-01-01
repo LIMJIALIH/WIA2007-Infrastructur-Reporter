@@ -130,26 +130,6 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         pendingTickets = new ArrayList<>();
         spamTickets = new ArrayList<>();
         currentDisplayedTickets = new ArrayList<>();
-
-        // Load data from TicketManager singleton
-        TicketManager ticketManager = TicketManager.getInstance();
-        allTickets = ticketManager.getAllTickets();
-
-        // Distribute tickets based on actual status
-        for (Ticket ticket : allTickets) {
-            switch (ticket.getStatus()) {
-                case PENDING:
-                    pendingTickets.add(ticket);
-                    break;
-                case ACCEPTED:
-                    completedTickets.add(ticket);
-                    break;
-                case REJECTED:
-                case SPAM:
-                    spamTickets.add(ticket);
-                    break;
-            }
-        }
     }
 
     private void initializeViews() {
@@ -380,24 +360,88 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
     }
 
     private void loadDashboardData() {
-        // Calculate stats
-        int totalReports = allTickets.size();
-        int totalPending = pendingTickets.size();
-        int highPriorityPending = (int) pendingTickets.stream()
-                .filter(t -> "High".equalsIgnoreCase(t.getSeverity()))
-                .count();
+        // Show loading state
+        runOnUiThread(() -> {
+            tvStatTotalReportsValue.setText("...");
+            tvStatPendingValue.setText("...");
+            tvStatHighPriorityValue.setText("...");
+            tvStatAvgResponseValue.setText("...");
+        });
+        
+        // Fetch all tickets from Supabase
+        TicketRepository.getAllTickets(new TicketRepository.FetchTicketsCallback() {
+            @Override
+            public void onSuccess(List<Ticket> tickets) {
+                runOnUiThread(() -> {
+                    // Update data lists
+                    allTickets.clear();
+                    completedTickets.clear();
+                    pendingTickets.clear();
+                    spamTickets.clear();
+                    
+                    allTickets.addAll(tickets);
+                    
+                    // Distribute tickets based on status
+                    for (Ticket ticket : allTickets) {
+                        switch (ticket.getStatus()) {
+                            case PENDING:
+                                pendingTickets.add(ticket);
+                                break;
+                            case ACCEPTED:
+                                completedTickets.add(ticket);
+                                break;
+                            case REJECTED:
+                            case SPAM:
+                                spamTickets.add(ticket);
+                                break;
+                        }
+                    }
+                    
+                    // Fetch statistics
+                    loadStatistics();
+                    
+                    // Update tab counts
+                    updateTabCounts();
+                    
+                    // Load current tab
+                    switchTab(currentTabIndex);
+                });
+            }
 
-        // Update stat cards
-        tvStatTotalReportsValue.setText(String.valueOf(totalReports));
-        tvStatPendingValue.setText(String.valueOf(totalPending));
-        tvStatHighPriorityValue.setText(String.valueOf(highPriorityPending));
-        tvStatAvgResponseValue.setText("2.5 hrs");
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(CouncilDashboardActivity.this, 
+                        "Error loading tickets: " + message, Toast.LENGTH_SHORT).show();
+                    tvStatTotalReportsValue.setText("0");
+                    tvStatPendingValue.setText("0");
+                    tvStatHighPriorityValue.setText("0");
+                    tvStatAvgResponseValue.setText("N/A");
+                });
+            }
+        });
+    }
+    
+    private void loadStatistics() {
+        TicketRepository.getCouncilStatistics(new TicketRepository.CouncilStatsCallback() {
+            @Override
+            public void onSuccess(int totalReports, int totalPending, int highPriorityPending, String avgResponse) {
+                runOnUiThread(() -> {
+                    tvStatTotalReportsValue.setText(String.valueOf(totalReports));
+                    tvStatPendingValue.setText(String.valueOf(totalPending));
+                    tvStatHighPriorityValue.setText(String.valueOf(highPriorityPending));
+                    tvStatAvgResponseValue.setText(avgResponse);
+                });
+            }
 
-        // Update tab buttons with counts
-        updateTabCounts();
-
-        // Load pending tickets by default
-        switchTab(2);
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(CouncilDashboardActivity.this, 
+                        "Error loading statistics: " + message, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void updateTabCounts() {
@@ -525,6 +569,7 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         intent.putExtra("TICKET_DESCRIPTION", ticket.getDescription());
         intent.putExtra("TICKET_TIMESTAMP", ticket.getDateTime());
         intent.putExtra("TICKET_IMAGE", ticket.getImageResId(this));
+        intent.putExtra("TICKET_IMAGE_URL", ticket.getImageUrl()); // Pass image URL
         intent.putExtra("TICKET_USERNAME", ticket.getUsername());
         startActivity(intent);
     }

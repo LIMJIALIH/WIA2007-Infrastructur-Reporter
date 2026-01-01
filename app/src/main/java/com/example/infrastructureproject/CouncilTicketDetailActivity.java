@@ -43,6 +43,7 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private String ticketDescription;
     private String ticketTimestamp;
     private String ticketUsername;
+    private String ticketImageUrl;
     private int ticketImageResId;
 
     @Override
@@ -91,6 +92,7 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         ticketDescription = intent.getStringExtra("TICKET_DESCRIPTION");
         ticketTimestamp = intent.getStringExtra("TICKET_TIMESTAMP");
         ticketUsername = intent.getStringExtra("TICKET_USERNAME");
+        ticketImageUrl = intent.getStringExtra("TICKET_IMAGE_URL"); // Get image URL
         ticketImageResId = intent.getIntExtra("TICKET_IMAGE", R.drawable.placeholder_image);
     }
 
@@ -121,8 +123,10 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
             tvSeverityBadge.setBackgroundColor(severityColor);
         }
 
-        // Set image
-        if (ticketImageResId != 0) {
+        // Set image from URL or fallback to resource
+        if (ticketImageUrl != null && !ticketImageUrl.isEmpty()) {
+            loadImageFromUrl(ticketImageUrl);
+        } else if (ticketImageResId != 0) {
             ivTicketImage.setImageResource(ticketImageResId);
         }
 
@@ -196,13 +200,39 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     }
 
     private void showEngineerSelectionDialog() {
-        // Mock engineer data with ticket counts
-        List<Engineer> engineers = new ArrayList<>();
-        engineers.add(new Engineer("John Doe", "john.doe@example.com", 15, 5));
-        engineers.add(new Engineer("Jane Smith", "jane.smith@example.com", 8, 2));
-        engineers.add(new Engineer("Mike Johnson", "mike.johnson@example.com", 12, 4));
-        engineers.add(new Engineer("Sarah Williams", "sarah.williams@example.com", 6, 1));
-        engineers.add(new Engineer("David Brown", "david.brown@example.com", 20, 8));
+        // Show loading dialog
+        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+            .setTitle("Loading Engineers...")
+            .setMessage("Please wait...")
+            .setCancelable(false)
+            .create();
+        loadingDialog.show();
+        
+        // Fetch real engineers from Supabase
+        TicketRepository.getEngineersWithStats(new TicketRepository.EngineersCallback() {
+            @Override
+            public void onSuccess(List<TicketRepository.Engineer> engineers) {
+                runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    if (engineers.isEmpty()) {
+                        Toast.makeText(CouncilTicketDetailActivity.this, "No engineers available", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    showEngineerDialog(engineers);
+                });
+            }
+            
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    Toast.makeText(CouncilTicketDetailActivity.this, "Error loading engineers: " + message, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+    
+    private void showEngineerDialog(List<TicketRepository.Engineer> engineers) {
 
         // Create dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -218,10 +248,10 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         EditText etInstructionsDialog = dialogView.findViewById(R.id.etInstructionsDialog);
 
         // Setup ListView adapter
-        EngineerAdapter adapter = new EngineerAdapter(this, engineers);
+        EngineerAdapter adapter = new EngineerAdapter(this, convertEngineers(engineers));
         lvEngineers.setAdapter(adapter);
 
-        final Engineer[] selectedEngineer = {null};
+        final TicketRepository.Engineer[] selectedEngineer = {null};
 
         lvEngineers.setOnItemClickListener((parent, view, position, id) -> {
             selectedEngineer[0] = engineers.get(position);
@@ -260,8 +290,41 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
 
         dialog.show();
     }
+    
+    private void loadImageFromUrl(String imageUrl) {
+        // Load image from URL in background thread
+        new Thread(() -> {
+            try {
+                java.net.URL url = new java.net.URL(imageUrl);
+                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                
+                // Update UI on main thread
+                runOnUiThread(() -> {
+                    if (bitmap != null && ivTicketImage != null) {
+                        ivTicketImage.setImageBitmap(bitmap);
+                    }
+                });
+            } catch (Exception e) {
+                android.util.Log.e("CouncilTicketDetail", "Error loading image from URL: " + e.getMessage(), e);
+            }
+        }).start();
+    }
+    
+    // Convert TicketRepository.Engineer to local Engineer for adapter
+    private List<Engineer> convertEngineers(List<TicketRepository.Engineer> repoEngineers) {
+        List<Engineer> engineers = new ArrayList<>();
+        for (TicketRepository.Engineer repoEng : repoEngineers) {
+            engineers.add(new Engineer(
+                repoEng.getName(),
+                repoEng.getEmail(),
+                repoEng.getTotalReports(),
+                repoEng.getHighPriority()
+            ));
+        }
+        return engineers;
+    }
 
-    // Engineer class for mock data
+    // Engineer class for adapter
     public static class Engineer {
         private String name;
         private String email;

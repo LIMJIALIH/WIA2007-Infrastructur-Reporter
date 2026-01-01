@@ -11,6 +11,7 @@ public class Ticket implements Serializable {
     private String dateTime;
     private String imageName;
     private String imageUrl; // Full URL to image in Supabase Storage
+    private String reporterId; // User ID of reporter from Supabase
     private String username;
     private TicketStatus status;
     private String reason; // Reason for accept/reject
@@ -63,6 +64,9 @@ public class Ticket implements Serializable {
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getReporterId() { return reporterId; }
+    public void setReporterId(String reporterId) { this.reporterId = reporterId; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

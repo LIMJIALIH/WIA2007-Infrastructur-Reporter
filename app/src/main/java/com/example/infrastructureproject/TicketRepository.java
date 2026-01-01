@@ -230,6 +230,240 @@ public class TicketRepository {
     }
     
     /**
+     * Get ALL tickets from Supabase (for council/management dashboard)
+     */
+    public static void getAllTickets(FetchTicketsCallback callback) {
+        new Thread(() -> {
+            try {
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=*&order=created_at.desc";
+                
+                String response = SupabaseManager.makeHttpRequest(
+                    "GET",
+                    url,
+                    null,
+                    SupabaseManager.getAccessToken()
+                );
+                
+                JSONArray ticketsArray = new JSONArray(response);
+                List<Ticket> tickets = new ArrayList<>();
+                
+                for (int i = 0; i < ticketsArray.length(); i++) {
+                    JSONObject ticketJson = ticketsArray.getJSONObject(i);
+                    
+                    // Extract database ID for image URL
+                    String dbId = ticketJson.optString("id", "");
+                    String reporterId = ticketJson.optString("reporter_id", "");
+                    
+                    // Get image URL from ticket_images table
+                    String imageUrl = getTicketImageUrl(dbId);
+                    
+                    // Get reporter's full name from profiles table
+                    String reporterName = getReporterName(reporterId);
+                    
+                    Ticket ticket = new Ticket(
+                        ticketJson.optString("ticket_id", ""),
+                        ticketJson.optString("issue_type", ""),
+                        ticketJson.optString("location", ""),
+                        formatDate(ticketJson.optString("created_at", "")),
+                        ticketJson.optString("description", ""),
+                        ticketJson.optString("severity", "Low"),
+                        ""
+                    );
+                    
+                    ticket.setStatus(parseStatus(ticketJson.optString("status", "pending")));
+                    ticket.setImageUrl(imageUrl);
+                    ticket.setReporterId(reporterId);
+                    ticket.setUsername(reporterName);
+                    
+                    tickets.add(ticket);
+                }
+                
+                if (callback != null) {
+                    callback.onSuccess(tickets);
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching all tickets", e);
+                if (callback != null) {
+                    callback.onError("Error: " + e.getMessage());
+                }
+            }
+        }).start();
+    }
+    
+    /**
+     * Get council statistics from all tickets
+     */
+    public static void getCouncilStatistics(CouncilStatsCallback callback) {
+        new Thread(() -> {
+            try {
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=status,severity,created_at";
+                
+                String response = SupabaseManager.makeHttpRequest(
+                    "GET",
+                    url,
+                    null,
+                    SupabaseManager.getAccessToken()
+                );
+                
+                JSONArray ticketsArray = new JSONArray(response);
+                
+                int totalReports = ticketsArray.length();
+                int totalPending = 0;
+                int highPriorityPending = 0;
+                int completedCount = 0;
+                long totalResponseTime = 0;
+                
+                for (int i = 0; i < ticketsArray.length(); i++) {
+                    JSONObject ticket = ticketsArray.getJSONObject(i);
+                    String status = ticket.optString("status", "pending").toLowerCase();
+                    String severity = ticket.optString("severity", "low");
+                    
+                    if ("pending".equals(status)) {
+                        totalPending++;
+                        if ("high".equalsIgnoreCase(severity)) {
+                            highPriorityPending++;
+                        }
+                    } else if ("accepted".equals(status) || "completed".equals(status)) {
+                        completedCount++;
+                        // For now, use placeholder response time (2.5 hours)
+                        // You can calculate actual time if you have accepted_at timestamp
+                    }
+                }
+                
+                // Calculate average response time (placeholder: 2.5 hrs)
+                String avgResponse = completedCount > 0 ? "2.5 hrs" : "N/A";
+                
+                if (callback != null) {
+                    callback.onSuccess(totalReports, totalPending, highPriorityPending, avgResponse);
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching council statistics", e);
+                if (callback != null) {
+                    callback.onError("Error: " + e.getMessage());
+                }
+            }
+        }).start();
+    }
+    
+    /**
+     * Get reporter's full name from profiles table
+     */
+    private static String getReporterName(String reporterId) {
+        if (reporterId == null || reporterId.isEmpty()) {
+            return "Anonymous";
+        }
+        
+        try {
+            String url = BuildConfig.SUPABASE_URL + "/rest/v1/profiles?id=eq." + reporterId + "&select=full_name";
+            
+            String response = SupabaseManager.makeHttpRequest(
+                "GET",
+                url,
+                null,
+                SupabaseManager.getAccessToken()
+            );
+            
+            JSONArray profilesArray = new JSONArray(response);
+            if (profilesArray.length() > 0) {
+                JSONObject profile = profilesArray.getJSONObject(0);
+                String fullName = profile.optString("full_name", "");
+                return fullName.isEmpty() ? "Anonymous" : fullName;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error fetching reporter name", e);
+        }
+        
+        return "Anonymous";
+    }
+    
+    /**
+     * Get all engineers with their ticket statistics
+     */
+    public static void getEngineersWithStats(EngineersCallback callback) {
+        new Thread(() -> {
+            try {
+                // First, get all engineers from profiles table
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/profiles?role=eq.engineer&select=id,full_name,email";
+                
+                String response = SupabaseManager.makeHttpRequest(
+                    "GET",
+                    url,
+                    null,
+                    SupabaseManager.getAccessToken()
+                );
+                
+                JSONArray engineersArray = new JSONArray(response);
+                List<Engineer> engineers = new ArrayList<>();
+                
+                for (int i = 0; i < engineersArray.length(); i++) {
+                    JSONObject engineerJson = engineersArray.getJSONObject(i);
+                    
+                    String engineerId = engineerJson.optString("id", "");
+                    String fullName = engineerJson.optString("full_name", "Unknown");
+                    String email = engineerJson.optString("email", "");
+                    
+                    // Get ticket statistics for this engineer
+                    int[] stats = getEngineerTicketStats(engineerId);
+                    int totalReports = stats[0];
+                    int highPriority = stats[1];
+                    
+                    Engineer engineer = new Engineer(engineerId, fullName, email, totalReports, highPriority);
+                    engineers.add(engineer);
+                }
+                
+                if (callback != null) {
+                    callback.onSuccess(engineers);
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching engineers", e);
+                if (callback != null) {
+                    callback.onError("Error: " + e.getMessage());
+                }
+            }
+        }).start();
+    }
+    
+    /**
+     * Get ticket statistics for a specific engineer
+     * Returns [total_tickets, high_priority_tickets]
+     */
+    private static int[] getEngineerTicketStats(String engineerId) {
+        int totalTickets = 0;
+        int highPriority = 0;
+        
+        try {
+            // Note: This assumes you have assigned_to column in tickets table
+            // If not, you'll need to add it to the database schema
+            String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?assigned_engineer_id=eq." + engineerId + "&select=severity";
+            
+            String response = SupabaseManager.makeHttpRequest(
+                "GET",
+                url,
+                null,
+                SupabaseManager.getAccessToken()
+            );
+            
+            JSONArray ticketsArray = new JSONArray(response);
+            totalTickets = ticketsArray.length();
+            
+            for (int i = 0; i < ticketsArray.length(); i++) {
+                JSONObject ticket = ticketsArray.getJSONObject(i);
+                String severity = ticket.optString("severity", "");
+                if ("high".equalsIgnoreCase(severity)) {
+                    highPriority++;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error fetching engineer stats", e);
+        }
+        
+        return new int[]{totalTickets, highPriority};
+    }
+    
+    /**
      * Get ticket statistics for a user
      */
     public static void getUserStatistics(String userId, StatsCallback callback) {
@@ -324,5 +558,38 @@ public class TicketRepository {
     public interface StatsCallback {
         void onSuccess(int total, int pending, int accepted, int rejected);
         void onError(String message);
+    }
+    
+    public interface CouncilStatsCallback {
+        void onSuccess(int totalReports, int totalPending, int highPriorityPending, String avgResponse);
+        void onError(String message);
+    }
+    
+    public interface EngineersCallback {
+        void onSuccess(List<Engineer> engineers);
+        void onError(String message);
+    }
+    
+    // Engineer data class
+    public static class Engineer {
+        private String id;
+        private String name;
+        private String email;
+        private int totalReports;
+        private int highPriority;
+        
+        public Engineer(String id, String name, String email, int totalReports, int highPriority) {
+            this.id = id;
+            this.name = name;
+            this.email = email;
+            this.totalReports = totalReports;
+            this.highPriority = highPriority;
+        }
+        
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+        public int getTotalReports() { return totalReports; }
+        public int getHighPriority() { return highPriority; }
     }
 }
