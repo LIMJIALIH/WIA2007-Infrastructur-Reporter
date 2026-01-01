@@ -45,6 +45,10 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         this.tickets = tickets;
         notifyDataSetChanged();
     }
+    
+    public List<Ticket> getTickets() {
+        return new ArrayList<>(tickets);
+    }
 
     public void removeTicket(int position) {
         if (position >= 0 && position < tickets.size()) {

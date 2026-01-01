@@ -34,6 +34,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CitizenDashboardActivity extends AppCompatActivity {
@@ -185,32 +186,77 @@ public class CitizenDashboardActivity extends AppCompatActivity {
     }
 
     private void refreshMyReports() {
-        // Get all tickets for this citizen (in real app, filter by user)
-        List<Ticket> allTickets = TicketManager.getInstance().getAllTickets();
-        ticketAdapter.setTickets(allTickets);
+        // Get current user ID
+        String userId = SupabaseManager.getCurrentUserId();
+        if (userId == null) {
+            Toast.makeText(this, "Please log in again", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Show loading state
+        refreshButton.setEnabled(false);
+        refreshButton.setText("Loading...");
+        
+        // Fetch tickets from Supabase
+        TicketRepository.getUserTickets(userId, new TicketRepository.FetchTicketsCallback() {
+            @Override
+            public void onSuccess(List<Ticket> tickets) {
+                runOnUiThread(() -> {
+                    ticketAdapter.setTickets(tickets);
+                    refreshButton.setEnabled(true);
+                    refreshButton.setText("🔄 Refresh");
+                    Toast.makeText(CitizenDashboardActivity.this, 
+                        "Reports refreshed (" + tickets.size() + " tickets)", 
+                        Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    refreshButton.setEnabled(true);
+                    refreshButton.setText("🔄 Refresh");
+                    Toast.makeText(CitizenDashboardActivity.this, 
+                        "Error loading reports: " + message, 
+                        Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+        
+        // Also update dashboard counts
         updateDashboardCounts();
-        Toast.makeText(this, "Reports refreshed", Toast.LENGTH_SHORT).show();
     }
 
     private void updateDashboardCounts() {
-        TicketManager ticketManager = TicketManager.getInstance();
-
-        // Update card counts
-        int totalCount = ticketManager.getTotalTicketCount();
-        int pendingCount = ticketManager.getTicketCountByStatus(Ticket.TicketStatus.PENDING);
-        int rejectedCount = ticketManager.getTicketCountByStatus(Ticket.TicketStatus.REJECTED);
-        int acceptedCount = ticketManager.getTicketCountByStatus(Ticket.TicketStatus.ACCEPTED);
-
-        totalReportsNumber.setText(String.valueOf(totalCount));
-        card2Number.setText(String.valueOf(pendingCount));
-        card3Number.setText(String.valueOf(rejectedCount));
-        card4Number.setText(String.valueOf(acceptedCount));
-
-        // Refresh My Reports list
-        List<Ticket> allTickets = ticketManager.getAllTickets();
-        if (ticketAdapter != null) {
-            ticketAdapter.setTickets(allTickets);
+        // Get current user ID
+        String userId = SupabaseManager.getCurrentUserId();
+        if (userId == null) {
+            return;
         }
+        
+        // Fetch statistics from Supabase
+        TicketRepository.getUserStatistics(userId, new TicketRepository.StatsCallback() {
+            @Override
+            public void onSuccess(int total, int pending, int accepted, int rejected) {
+                runOnUiThread(() -> {
+                    totalReportsNumber.setText(String.valueOf(total));
+                    card2Number.setText(String.valueOf(pending));
+                    card3Number.setText(String.valueOf(rejected));
+                    card4Number.setText(String.valueOf(accepted));
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    // Set to 0 if error
+                    totalReportsNumber.setText("0");
+                    card2Number.setText("0");
+                    card3Number.setText("0");
+                    card4Number.setText("0");
+                });
+            }
+        });
     }
 
     // Call this method when a new report is submitted
@@ -446,25 +492,8 @@ public class CitizenDashboardActivity extends AppCompatActivity {
     }
 
     private void submitNewReport(String description, String location) {
-        // Create new ticket
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd hh:mm a", java.util.Locale.getDefault());
-        String currentTime = sdf.format(new java.util.Date());
-
-        Ticket newTicket = new Ticket(
-                "",
-                "Road",
-                "Medium",
-                location,
-                description,
-                currentTime,
-                "new_report_image"
-        );
-
-        // Add to TicketManager
-        TicketManager.getInstance().addTicket(newTicket);
-
-        // Update dashboard and switch back
-        onNewReportSubmitted(newTicket);
+        // Deprecated - submission now handled in ReportIssueFragment with real backend
+        Toast.makeText(this, "Please use the 'New Report' tab to submit reports", Toast.LENGTH_SHORT).show();
     }
 
     // Handle card clicks to show filtered tickets dialog (from User-UI)
@@ -492,8 +521,10 @@ public class CitizenDashboardActivity extends AppCompatActivity {
             }
         }
 
-        // Show dialog with filtered tickets (using -test folder ticket details view)
-        TicketsDialogFragment dialog = TicketsDialogFragment.newInstance(reportType);
+        // Show dialog with filtered tickets
+        // Instead of using TicketManager, we'll pass the current tickets from dashboard
+        List<Ticket> currentTickets = ticketAdapter != null ? ticketAdapter.getTickets() : new ArrayList<>();
+        TicketsDialogFragment dialog = TicketsDialogFragment.newInstance(reportType, currentTickets);
         dialog.show(getSupportFragmentManager(), TicketsDialogFragment.TAG);
     }
 }

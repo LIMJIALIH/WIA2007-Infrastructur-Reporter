@@ -26,6 +26,7 @@ public class SupabaseManager {
     // Simple in-memory session
     private static String accessToken = null;
     private static String currentFullName = null;
+    private static String currentUserId = null;
 
     // Password validation regex: 
     // (?=.*[0-9])       At least one digit
@@ -79,6 +80,7 @@ public class SupabaseManager {
                     token = authJson.getString("access_token");
                     accessToken = token; // Store it
                     currentFullName = fullName;
+                    currentUserId = userId;
                 }
                 
                 // 2. Insert into profiles
@@ -147,6 +149,7 @@ public class SupabaseManager {
                 
                 accessToken = authJson.getString("access_token");
                 String userId = authJson.getJSONObject("user").getString("id");
+                currentUserId = userId;
 
                 // 2. Fetch Role and Full Name
                 String queryUrl = SUPABASE_URL + "/rest/v1/profiles?id=eq." + userId + "&select=role,full_name";
@@ -225,20 +228,177 @@ public class SupabaseManager {
     public static void logout() {
         accessToken = null;
         currentFullName = null;
+        currentUserId = null;
+    }
+    
+    public static String getAccessToken() {
+        return accessToken;
     }
     
     public static String getCurrentFullName() {
         return currentFullName;
     }
+    
+    public static String getCurrentUserId() {
+        return currentUserId;
+    }
 
-    private static String makeHttpRequest(String method, String urlString, String jsonBody, String token) throws Exception {
+    // Ticket submission callback
+    public interface TicketCallback {
+        void onSuccess(String ticketId);
+        void onError(String message);
+    }
+
+    // Submit a new ticket to Supabase
+    public static void submitTicket(String issueType, String severity, String location, 
+                                   String description, String reporterId, TicketCallback callback) {
+        executor.execute(() -> {
+            try {
+                // Check if user is logged in
+                Log.d(TAG, "=== TICKET SUBMISSION DEBUG ===");
+                Log.d(TAG, "Access Token: " + (accessToken != null ? "EXISTS (length: " + accessToken.length() + ")" : "NULL"));
+                Log.d(TAG, "Reporter ID: " + reporterId);
+                Log.d(TAG, "Current User ID: " + currentUserId);
+                Log.d(TAG, "Current Full Name: " + currentFullName);
+                
+                if (accessToken == null || reporterId == null) {
+                    Log.e(TAG, "SUBMISSION BLOCKED - Missing credentials");
+                    postTicketError(callback, "You must be logged in to submit a ticket. Please log in again.");
+                    return;
+                }
+                
+                // Generate ticket ID (T + timestamp + random)
+                String ticketId = "T" + System.currentTimeMillis() + ((int)(Math.random() * 1000));
+                
+                String ticketsUrl = SUPABASE_URL + "/rest/v1/tickets?select=*";
+                JSONObject ticketBody = new JSONObject();
+                ticketBody.put("ticket_id", ticketId);
+                ticketBody.put("reporter_id", reporterId);
+                ticketBody.put("issue_type", issueType);
+                ticketBody.put("severity", severity);
+                ticketBody.put("status", "Pending");
+                ticketBody.put("location", location);
+                ticketBody.put("description", description);
+                
+                Log.d(TAG, "Request URL: " + ticketsUrl);
+                Log.d(TAG, "Request Body: " + ticketBody.toString());
+                
+                String response = makeHttpRequest("POST", ticketsUrl, ticketBody.toString(), accessToken);
+                
+                Log.d(TAG, "Response: " + (response != null ? response : "NULL"));
+                Log.d(TAG, "Response length: " + (response != null ? response.length() : 0));
+                
+                // Check if response is empty
+                if (response == null || response.trim().isEmpty()) {
+                    Log.e(TAG, "EMPTY RESPONSE FROM SERVER");
+                    postTicketError(callback, "Empty response from server. Possible causes:\n1. Not logged in\n2. Session expired\n3. Internet connection issue\n4. RLS policy blocking insert\n\nPlease logout and login again.");
+                    return;
+                }
+                
+                // Parse response to get the created ticket UUID
+                JSONArray responseArray = new JSONArray(response);
+                if (responseArray.length() > 0) {
+                    JSONObject createdTicket = responseArray.getJSONObject(0);
+                    String createdId = createdTicket.getString("id");
+                    mainHandler.post(() -> callback.onSuccess(createdId));
+                } else {
+                    postTicketError(callback, "Ticket created but no ID returned");
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Submit Ticket Error", e);
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && errorMsg.contains("HTTP 401")) {
+                    postTicketError(callback, "Authentication failed. Please log in again.");
+                } else if (errorMsg != null && errorMsg.contains("HTTP 400")) {
+                    postTicketError(callback, "Invalid data. Check that all fields are filled correctly.");
+                } else if (errorMsg != null && errorMsg.contains("HTTP 403")) {
+                    postTicketError(callback, "Permission denied. Check Row Level Security policies in Supabase.");
+                } else {
+                    postTicketError(callback, "Failed to submit ticket: " + errorMsg);
+                }
+            }
+        });
+    }
+
+    // Upload ticket image to Supabase Storage
+    public static void uploadTicketImage(String ticketUuid, byte[] imageData, String fileName, 
+                                         String uploadedBy, TicketCallback callback) {
+        executor.execute(() -> {
+            try {
+                // 1. Upload to storage bucket
+                String bucketName = "ticket-images";
+                String filePath = ticketUuid + "/" + fileName;
+                String storageUrl = SUPABASE_URL + "/storage/v1/object/" + bucketName + "/" + filePath;
+                
+                HttpURLConnection conn = null;
+                try {
+                    URL url = new URL(storageUrl);
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("apikey", SUPABASE_KEY);
+                    conn.setRequestProperty("Authorization", "Bearer " + accessToken);
+                    conn.setRequestProperty("Content-Type", "image/jpeg");
+                    conn.setDoOutput(true);
+                    
+                    try(OutputStream os = conn.getOutputStream()) {
+                        os.write(imageData);
+                        os.flush();
+                    }
+                    
+                    int code = conn.getResponseCode();
+                    if (code < 200 || code >= 300) {
+                        throw new Exception("Image upload failed with code: " + code);
+                    }
+                    
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
+                
+                // 2. Insert metadata into ticket_images table
+                String imagesUrl = SUPABASE_URL + "/rest/v1/ticket_images";
+                JSONObject imageBody = new JSONObject();
+                imageBody.put("ticket_id", ticketUuid);
+                imageBody.put("bucket", bucketName);
+                imageBody.put("path", filePath);
+                imageBody.put("filename", fileName);
+                imageBody.put("uploaded_by", uploadedBy);
+                
+                JSONObject metadata = new JSONObject();
+                metadata.put("size", imageData.length);
+                metadata.put("contentType", "image/jpeg");
+                imageBody.put("metadata", metadata);
+                
+                makeHttpRequest("POST", imagesUrl, imageBody.toString(), accessToken);
+                
+                mainHandler.post(() -> callback.onSuccess(filePath));
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Upload Image Error", e);
+                postTicketError(callback, "Failed to upload image: " + e.getMessage());
+            }
+        });
+    }
+
+    private static void postTicketError(TicketCallback callback, String message) {
+        mainHandler.post(() -> callback.onError(message));
+    }
+
+    public static String makeHttpRequest(String method, String urlString, String jsonBody, String token) throws Exception {
         HttpURLConnection conn = null;
         try {
+            Log.d(TAG, "Making HTTP Request:");
+            Log.d(TAG, "Method: " + method);
+            Log.d(TAG, "URL: " + urlString);
+            Log.d(TAG, "Has Token: " + (token != null));
+            
             URL url = new URL(urlString);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod(method);
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("apikey", SUPABASE_KEY);
+            conn.setRequestProperty("Prefer", "return=representation");
+            
             if (token != null) {
                 conn.setRequestProperty("Authorization", "Bearer " + token);
             } else {
@@ -254,6 +414,8 @@ public class SupabaseManager {
             }
             
             int code = conn.getResponseCode();
+            Log.d(TAG, "HTTP Response Code: " + code);
+            
             if (code >= 200 && code < 300) {
                 try(BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
                     StringBuilder response = new StringBuilder();
@@ -261,7 +423,9 @@ public class SupabaseManager {
                     while ((responseLine = br.readLine()) != null) {
                         response.append(responseLine.trim());
                     }
-                    return response.toString();
+                    String responseStr = response.toString();
+                    Log.d(TAG, "Response Body: " + responseStr);
+                    return responseStr;
                 }
             } else {
                  try(BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
@@ -270,9 +434,14 @@ public class SupabaseManager {
                     while ((responseLine = br.readLine()) != null) {
                         response.append(responseLine.trim());
                     }
-                    throw new Exception("HTTP " + code + ": " + response.toString());
+                    String errorMsg = response.toString();
+                    Log.e(TAG, "HTTP Error " + code + ": " + errorMsg);
+                    throw new Exception("HTTP " + code + ": " + errorMsg);
                 }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "HTTP Request Exception: " + e.getMessage(), e);
+            throw e;
         } finally {
             if (conn != null) conn.disconnect();
         }

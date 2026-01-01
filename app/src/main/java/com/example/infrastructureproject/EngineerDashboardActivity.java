@@ -132,13 +132,14 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
         spamTickets = new ArrayList<>();
         currentDisplayedTickets = new ArrayList<>();
 
-        // Load mock data
-        allTickets = MockDataGenerator.generateMockTickets();
+        // Load mock data - COMMENTED OUT, use Supabase TicketRepository instead
+        // allTickets = MockDataGenerator.generateMockTickets();
 
         // Initially all tickets are pending
-        for (Ticket ticket : allTickets) {
-            pendingTickets.add(ticket);
-        }
+        // TODO: Load tickets from Supabase using TicketRepository
+        // for (Ticket ticket : allTickets) {
+        //     pendingTickets.add(ticket);
+        // }
     }
 
     private void initializeViews() {

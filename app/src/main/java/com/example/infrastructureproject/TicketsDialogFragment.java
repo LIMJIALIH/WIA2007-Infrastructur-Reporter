@@ -22,11 +22,13 @@ public class TicketsDialogFragment extends DialogFragment {
 
     public static final String TAG = "TicketsDialogFragment";
     private static final String ARG_REPORT_TYPE = "report_type";
+    private static final String ARG_TICKETS = "tickets";
 
-    public static TicketsDialogFragment newInstance(String reportType) {
+    public static TicketsDialogFragment newInstance(String reportType, List<Ticket> tickets) {
         TicketsDialogFragment fragment = new TicketsDialogFragment();
         Bundle args = new Bundle();
         args.putString(ARG_REPORT_TYPE, reportType);
+        args.putSerializable(ARG_TICKETS, new ArrayList<>(tickets));
         fragment.setArguments(args);
         return fragment;
     }
@@ -42,6 +44,8 @@ public class TicketsDialogFragment extends DialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         String reportTypeString = getArguments() != null ? getArguments().getString(ARG_REPORT_TYPE, "Unknown") : "Unknown";
+        List<Ticket> allTickets = getArguments() != null ? 
+            (List<Ticket>) getArguments().getSerializable(ARG_TICKETS) : new ArrayList<>();
 
         // 1. Set the dialog title
         TextView dialogTitle = view.findViewById(R.id.dialogTitle);
@@ -51,8 +55,7 @@ public class TicketsDialogFragment extends DialogFragment {
         RecyclerView recyclerView = view.findViewById(R.id.recyclerViewTickets);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        // Get tickets from TicketManager
-        List<Ticket> allTickets = TicketManager.getInstance().getAllTickets();
+        // Get tickets from arguments instead of TicketManager
         List<Ticket> filteredTickets = filterTickets(allTickets, reportTypeString);
 
         // 3. Create the Adapter with display-only listener

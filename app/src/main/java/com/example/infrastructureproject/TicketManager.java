@@ -9,51 +9,8 @@ public class TicketManager {
 
     private TicketManager() {
         allTickets = new ArrayList<>();
-        // Initialize with mock data
-        allTickets.addAll(MockDataGenerator.generateMockTickets());
-        
-        // Add 3 more tickets to get 8 total (4 pending, 2 rejected, 2 accepted)
-        allTickets.add(new Ticket(
-                "TKT006",
-                "Road",
-                "Medium",
-                "Jalan Ampang, Kuala Lumpur",
-                "Street light not working for the past week. Dark at night causing safety concerns.",
-                "2025-11-11 06:30 PM",
-                "streetlight_broken"
-        ));
-        
-        allTickets.add(new Ticket(
-                "TKT007",
-                "Utilities",
-                "High",
-                "Taman Tun Dr Ismail",
-                "Manhole cover missing on main road. Dangerous for vehicles and pedestrians.",
-                "2025-11-10 03:15 PM",
-                "manhole_missing"
-        ));
-        
-        allTickets.add(new Ticket(
-                "TKT008",
-                "Environment",
-                "Low",
-                "KLCC Park",
-                "Overflowing trash bin near jogging track. Needs immediate attention.",
-                "2025-11-09 07:45 AM",
-                "trash_overflow"
-        ));
-        
-        // Set statuses to match User_UI: 4 PENDING, 2 REJECTED, 2 ACCEPTED
-        if (allTickets.size() >= 8) {
-            allTickets.get(0).setStatus(Ticket.TicketStatus.PENDING);
-            allTickets.get(1).setStatus(Ticket.TicketStatus.PENDING);
-            allTickets.get(2).setStatus(Ticket.TicketStatus.PENDING);
-            allTickets.get(3).setStatus(Ticket.TicketStatus.PENDING);
-            allTickets.get(4).setStatus(Ticket.TicketStatus.REJECTED);  // Spam ticket
-            allTickets.get(5).setStatus(Ticket.TicketStatus.REJECTED);
-            allTickets.get(6).setStatus(Ticket.TicketStatus.ACCEPTED);
-            allTickets.get(7).setStatus(Ticket.TicketStatus.ACCEPTED);
-        }
+        // Mock data removed - now using real Supabase data
+        // Tickets are now loaded from Supabase via TicketRepository
     }
 
     public static synchronized TicketManager getInstance() {
