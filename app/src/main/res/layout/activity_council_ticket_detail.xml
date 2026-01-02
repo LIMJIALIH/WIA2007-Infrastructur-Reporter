@@ -280,6 +280,21 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- Delete Ticket Button (for completed/spam tickets) -->
+            <Button
+                android:id="@+id/btnDeleteCouncilTicket"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="@android:color/holo_red_dark"
+                android:drawableStart="@android:drawable/ic_menu_delete"
+                android:drawablePadding="8dp"
+                android:text="Delete Ticket"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
         </LinearLayout>
 
     </LinearLayout>

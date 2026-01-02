@@ -34,6 +34,7 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private TextView tvAssignedTo;
     private Button btnMarkAsSpam;
     private Button btnAssignToEngineer;
+    private Button btnDeleteCouncilTicket;
     private LinearLayout actionButtonsLayout;
 
     private String ticketId;
@@ -79,6 +80,7 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         tvAssignedTo = findViewById(R.id.tvAssignedTo);
         btnMarkAsSpam = findViewById(R.id.btnMarkAsSpam);
         btnAssignToEngineer = findViewById(R.id.btnAssignToEngineer);
+        btnDeleteCouncilTicket = findViewById(R.id.btnDeleteCouncilTicket);
         
         // Get the action buttons container
         actionButtonsLayout = (LinearLayout) btnAssignToEngineer.getParent();
@@ -138,33 +140,42 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(Ticket ticket) {
                     runOnUiThread(() -> {
-                        // Council notes - always show, display 'null' if empty
-                        tvCouncilNotesLabel.setVisibility(View.VISIBLE);
-                        tvCouncilNotes.setVisibility(View.VISIBLE);
-                        if (ticket.getCouncilNotes() != null && !ticket.getCouncilNotes().isEmpty()) {
+                        // Council notes - only show if not empty/null
+                        if (ticket.getCouncilNotes() != null && !ticket.getCouncilNotes().isEmpty() && !ticket.getCouncilNotes().equalsIgnoreCase("null")) {
+                            tvCouncilNotesLabel.setVisibility(View.VISIBLE);
+                            tvCouncilNotes.setVisibility(View.VISIBLE);
                             tvCouncilNotes.setText(ticket.getCouncilNotes());
                         } else {
-                            tvCouncilNotes.setText("null");
+                            tvCouncilNotesLabel.setVisibility(View.GONE);
+                            tvCouncilNotes.setVisibility(View.GONE);
                         }
 
-                        // Assigned engineer - always show, display 'null' if not assigned
-                        tvAssignedTo.setVisibility(View.VISIBLE);
-                        boolean isAssigned = ticket.getAssignedTo() != null && !ticket.getAssignedTo().isEmpty();
+                        // Assigned engineer - only show if assigned
+                        boolean isAssigned = ticket.getAssignedTo() != null && !ticket.getAssignedTo().isEmpty() && !ticket.getAssignedTo().equalsIgnoreCase("null");
                         if (isAssigned) {
+                            tvAssignedTo.setVisibility(View.VISIBLE);
                             tvAssignedTo.setText("Assigned to: " + ticket.getAssignedTo());
                         } else {
-                            tvAssignedTo.setText("Assigned to: null");
+                            tvAssignedTo.setVisibility(View.GONE);
                         }
 
                         // Hide assign/spam buttons when assigned or spam
+                        // Show delete button for completed/spam/accepted/rejected tickets
                         if (actionButtonsLayout != null) {
                             if (ticket.getStatus() == Ticket.TicketStatus.UNDER_REVIEW ||
                                 ticket.getStatus() == Ticket.TicketStatus.ACCEPTED ||
                                 ticket.getStatus() == Ticket.TicketStatus.REJECTED ||
                                 ticket.getStatus() == Ticket.TicketStatus.SPAM) {
                                 actionButtonsLayout.setVisibility(View.GONE);
+                                // Show delete button for completed tickets
+                                if (btnDeleteCouncilTicket != null) {
+                                    btnDeleteCouncilTicket.setVisibility(View.VISIBLE);
+                                }
                             } else {
                                 actionButtonsLayout.setVisibility(View.VISIBLE);
+                                if (btnDeleteCouncilTicket != null) {
+                                    btnDeleteCouncilTicket.setVisibility(View.GONE);
+                                }
                             }
                         }
                     });
@@ -193,6 +204,11 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
 
         // Assign to Engineer
         btnAssignToEngineer.setOnClickListener(v -> showEngineerSelectionDialog());
+        
+        // Delete Ticket - show only for completed/spam tickets
+        if (btnDeleteCouncilTicket != null) {
+            btnDeleteCouncilTicket.setOnClickListener(v -> showDeleteConfirmation());
+        }
     }
 
     private void showMarkAsSpamDialog() {
@@ -383,5 +399,34 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         public int getHighPriorityTickets() {
             return highPriorityTickets;
         }
+    }
+    
+    private void showDeleteConfirmation() {
+        new AlertDialog.Builder(this)
+            .setTitle("Delete Ticket")
+            .setMessage("Are you sure you want to delete this ticket from council view? Citizens and engineers can still see it.")
+            .setPositiveButton("Delete", (dialog, which) -> {
+                if (ticketDbId != null && !ticketDbId.isEmpty()) {
+                    TicketRepository.softDeleteTicketForCouncil(ticketDbId, new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            runOnUiThread(() -> {
+                                Toast.makeText(CouncilTicketDetailActivity.this, "Ticket deleted from council view", Toast.LENGTH_SHORT).show();
+                                setResult(RESULT_OK);
+                                finish();
+                            });
+                        }
+                        
+                        @Override
+                        public void onError(String message) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(CouncilTicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 }

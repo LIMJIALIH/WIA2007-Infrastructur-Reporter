@@ -137,6 +137,7 @@ public class TicketRepository {
     public static void getUserTickets(String userId, FetchTicketsCallback callback) {
         new Thread(() -> {
             try {
+                // Fetch tickets for this user (soft delete filter applied in code if column exists)
                 String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?reporter_id=eq." + userId + "&order=created_at.desc";
                 
                 String response = SupabaseManager.makeHttpRequest(
@@ -152,6 +153,12 @@ public class TicketRepository {
                 
                 for (int i = 0; i < ticketsArray.length(); i++) {
                     JSONObject ticketJson = ticketsArray.getJSONObject(i);
+                    
+                    // Skip soft-deleted tickets (if column exists)
+                    boolean deletedByCitizen = ticketJson.optBoolean("deleted_by_citizen", false);
+                    if (deletedByCitizen) {
+                        continue; // Skip this ticket
+                    }
                     
                     // Convert JSON to Ticket object
                     String ticketId = ticketJson.optString("ticket_id", "");
@@ -294,6 +301,7 @@ public class TicketRepository {
     public static void getAllTickets(FetchTicketsCallback callback) {
         new Thread(() -> {
             try {
+                // Fetch all tickets (soft delete filter applied in code if column exists)
                 String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=*&order=created_at.desc";
                 
                 String response = SupabaseManager.makeHttpRequest(
@@ -308,6 +316,12 @@ public class TicketRepository {
                 
                 for (int i = 0; i < ticketsArray.length(); i++) {
                     JSONObject ticketJson = ticketsArray.getJSONObject(i);
+                    
+                    // Skip soft-deleted tickets for council (if column exists)
+                    boolean deletedByCouncil = ticketJson.optBoolean("deleted_by_council", false);
+                    if (deletedByCouncil) {
+                        continue; // Skip this ticket
+                    }
                     
                     // Extract database ID for image URL
                     String dbId = ticketJson.optString("id", "");
@@ -357,7 +371,8 @@ public class TicketRepository {
     public static void getCouncilStatistics(CouncilStatsCallback callback) {
         new Thread(() -> {
             try {
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=status,severity,created_at";
+                // Get all tickets (soft delete filter applied in code if column exists)
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=status,severity,created_at,assigned_at";
                 
                 String response = SupabaseManager.makeHttpRequest(
                     "GET",
@@ -371,28 +386,53 @@ public class TicketRepository {
                 int totalReports = ticketsArray.length();
                 int totalPending = 0;
                 int highPriorityPending = 0;
-                int completedCount = 0;
                 long totalResponseTime = 0;
+                int assignedCount = 0;
+                
+                SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
                 
                 for (int i = 0; i < ticketsArray.length(); i++) {
                     JSONObject ticket = ticketsArray.getJSONObject(i);
                     String status = ticket.optString("status", "pending").toLowerCase();
                     String severity = ticket.optString("severity", "low");
+                    String createdAt = ticket.optString("created_at", "");
+                    String assignedAt = ticket.optString("assigned_at", "");
                     
                     if ("pending".equals(status)) {
                         totalPending++;
                         if ("high".equalsIgnoreCase(severity)) {
                             highPriorityPending++;
                         }
-                    } else if ("accepted".equals(status) || "completed".equals(status)) {
-                        completedCount++;
-                        // For now, use placeholder response time (2.5 hours)
-                        // You can calculate actual time if you have accepted_at timestamp
+                    }
+                    
+                    // Calculate response time for assigned tickets
+                    if (!assignedAt.isEmpty() && !createdAt.isEmpty()) {
+                        try {
+                            Date created = isoFormat.parse(createdAt.substring(0, 19));
+                            Date assigned = isoFormat.parse(assignedAt.substring(0, 19));
+                            long responseTime = assigned.getTime() - created.getTime();
+                            totalResponseTime += responseTime;
+                            assignedCount++;
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing dates for avg response", e);
+                        }
                     }
                 }
                 
-                // Calculate average response time (placeholder: 2.5 hrs)
-                String avgResponse = completedCount > 0 ? "2.5 hrs" : "N/A";
+                // Calculate average response time
+                String avgResponse;
+                if (assignedCount > 0) {
+                    long avgMillis = totalResponseTime / assignedCount;
+                    long avgHours = avgMillis / (1000 * 60 * 60);
+                    double avgHoursFraction = avgMillis / (1000.0 * 60 * 60);
+                    if (avgHoursFraction < 1) {
+                        avgResponse = "< 1 hr";
+                    } else {
+                        avgResponse = String.format("%.1f hrs", avgHoursFraction);
+                    }
+                } else {
+                    avgResponse = "N/A";
+                }
                 
                 if (callback != null) {
                     callback.onSuccess(totalReports, totalPending, highPriorityPending, avgResponse);
@@ -738,6 +778,7 @@ public class TicketRepository {
     public static void getUserStatistics(String userId, StatsCallback callback) {
         new Thread(() -> {
             try {
+                // Count all tickets for user (soft delete filter applied in code if column exists)
                 String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?reporter_id=eq." + userId + "&select=status";
                 
                 String response = SupabaseManager.makeHttpRequest(
@@ -759,6 +800,7 @@ public class TicketRepository {
                     
                     switch (status.toLowerCase()) {
                         case "pending":
+                        case "under_review": // Pending includes both pending and under_review
                             pending++;
                             break;
                         case "accepted":
@@ -766,7 +808,7 @@ public class TicketRepository {
                             accepted++;
                             break;
                         case "rejected":
-                        case "spam":
+                        case "spam": // Rejected includes both rejected and spam
                             rejected++;
                             break;
                     }
@@ -924,5 +966,51 @@ public class TicketRepository {
         public String getEmail() { return email; }
         public int getTotalReports() { return totalReports; }
         public int getHighPriority() { return highPriority; }
+    }
+    
+    /**
+     * Soft delete ticket for citizen view
+     * Sets deleted_by_citizen = true, hiding it from citizen dashboard
+     * Ticket remains visible to council and engineer
+     */
+    public static void softDeleteTicketForCitizen(String ticketDbId, AssignTicketCallback callback) {
+        new Thread(() -> {
+            try {
+                JSONObject updateData = new JSONObject();
+                updateData.put("deleted_by_citizen", true);
+                
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
+                SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
+                
+                Log.d(TAG, "Ticket soft-deleted for citizen");
+                if (callback != null) callback.onSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Error soft-deleting ticket for citizen", e);
+                if (callback != null) callback.onError("Error: " + e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
+     * Soft delete ticket for council view
+     * Sets deleted_by_council = true, hiding it from council dashboard
+     * Ticket remains visible to citizen and engineer
+     */
+    public static void softDeleteTicketForCouncil(String ticketDbId, AssignTicketCallback callback) {
+        new Thread(() -> {
+            try {
+                JSONObject updateData = new JSONObject();
+                updateData.put("deleted_by_council", true);
+                
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
+                SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
+                
+                Log.d(TAG, "Ticket soft-deleted for council");
+                if (callback != null) callback.onSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Error soft-deleting ticket for council", e);
+                if (callback != null) callback.onError("Error: " + e.getMessage());
+            }
+        }).start();
     }
 }

@@ -236,23 +236,27 @@ public class TicketDetailActivity extends AppCompatActivity {
                     TicketRepository.engineerProcessTicket(dbId, engineerId, "ACCEPTED", reason, new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
-                            ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
-                            ticket.setReason(reason);
-                            if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
-                            if (tvReason != null) { tvReason.setVisibility(View.VISIBLE); tvReason.setText(reason);} 
-                            btnAccept.setVisibility(View.GONE);
-                            btnReject.setVisibility(View.GONE);
-                            btnSpam.setVisibility(View.GONE);
-                            Intent resultIntent = new Intent();
-                            resultIntent.putExtra("ticket_id", ticket.getId());
-                            resultIntent.putExtra("new_status", "ACCEPTED");
-                            resultIntent.putExtra("reason", reason);
-                            setResult(RESULT_OK, resultIntent);
-                            Toast.makeText(TicketDetailActivity.this, "Ticket Accepted", Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+                                ticket.setReason(reason);
+                                if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                                if (tvReason != null) { tvReason.setVisibility(View.VISIBLE); tvReason.setText(reason);} 
+                                btnAccept.setVisibility(View.GONE);
+                                btnReject.setVisibility(View.GONE);
+                                btnSpam.setVisibility(View.GONE);
+                                Intent resultIntent = new Intent();
+                                resultIntent.putExtra("ticket_id", ticket.getId());
+                                resultIntent.putExtra("new_status", "ACCEPTED");
+                                resultIntent.putExtra("reason", reason);
+                                setResult(RESULT_OK, resultIntent);
+                                Toast.makeText(TicketDetailActivity.this, "Ticket Accepted", Toast.LENGTH_SHORT).show();
+                            });
                         }
                         @Override
                         public void onError(String message) {
-                            Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
                         }
                     });
                 }));
@@ -265,23 +269,27 @@ public class TicketDetailActivity extends AppCompatActivity {
                     TicketRepository.engineerProcessTicket(dbId, engineerId, "REJECTED", reason, new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
-                            ticket.setStatus(Ticket.TicketStatus.REJECTED);
-                            ticket.setReason(reason);
-                            if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
-                            if (tvReason != null) { tvReason.setVisibility(View.VISIBLE); tvReason.setText(reason);} 
-                            btnAccept.setVisibility(View.GONE);
-                            btnReject.setVisibility(View.GONE);
-                            btnSpam.setVisibility(View.GONE);
-                            Intent resultIntent = new Intent();
-                            resultIntent.putExtra("ticket_id", ticket.getId());
-                            resultIntent.putExtra("new_status", "REJECTED");
-                            resultIntent.putExtra("reason", reason);
-                            setResult(RESULT_OK, resultIntent);
-                            Toast.makeText(TicketDetailActivity.this, "Ticket Rejected", Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                ticket.setStatus(Ticket.TicketStatus.REJECTED);
+                                ticket.setReason(reason);
+                                if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                                if (tvReason != null) { tvReason.setVisibility(View.VISIBLE); tvReason.setText(reason);} 
+                                btnAccept.setVisibility(View.GONE);
+                                btnReject.setVisibility(View.GONE);
+                                btnSpam.setVisibility(View.GONE);
+                                Intent resultIntent = new Intent();
+                                resultIntent.putExtra("ticket_id", ticket.getId());
+                                resultIntent.putExtra("new_status", "REJECTED");
+                                resultIntent.putExtra("reason", reason);
+                                setResult(RESULT_OK, resultIntent);
+                                Toast.makeText(TicketDetailActivity.this, "Ticket Rejected", Toast.LENGTH_SHORT).show();
+                            });
                         }
                         @Override
                         public void onError(String message) {
-                            Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
                         }
                     });
                 }));
@@ -294,19 +302,23 @@ public class TicketDetailActivity extends AppCompatActivity {
                     TicketRepository.engineerProcessTicket(dbId, engineerId, "SPAM", "", new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
-                            ticket.setStatus(Ticket.TicketStatus.SPAM);
-                            btnAccept.setVisibility(View.GONE);
-                            btnReject.setVisibility(View.GONE);
-                            btnSpam.setVisibility(View.GONE);
-                            Intent resultIntent = new Intent();
-                            resultIntent.putExtra("ticket_id", ticket.getId());
-                            resultIntent.putExtra("new_status", "SPAM");
-                            setResult(RESULT_OK, resultIntent);
-                            Toast.makeText(TicketDetailActivity.this, "Marked as Spam", Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                ticket.setStatus(Ticket.TicketStatus.SPAM);
+                                btnAccept.setVisibility(View.GONE);
+                                btnReject.setVisibility(View.GONE);
+                                btnSpam.setVisibility(View.GONE);
+                                Intent resultIntent = new Intent();
+                                resultIntent.putExtra("ticket_id", ticket.getId());
+                                resultIntent.putExtra("new_status", "SPAM");
+                                setResult(RESULT_OK, resultIntent);
+                                Toast.makeText(TicketDetailActivity.this, "Marked as Spam", Toast.LENGTH_SHORT).show();
+                            });
                         }
                         @Override
                         public void onError(String message) {
-                            Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
                         }
                     });
                 });
@@ -333,15 +345,66 @@ public class TicketDetailActivity extends AppCompatActivity {
                 ivClose.setOnClickListener(v -> finish());
             }
             
+            // Show delete button for accepted/rejected/spam tickets
+            Button btnDeleteTicket = findViewById(R.id.btnDeleteTicket);
+            if (btnDeleteTicket != null && ticket != null) {
+                // Show delete button only for completed tickets (accepted/rejected/spam)
+                if (ticket.getStatus() == Ticket.TicketStatus.ACCEPTED ||
+                    ticket.getStatus() == Ticket.TicketStatus.REJECTED ||
+                    ticket.getStatus() == Ticket.TicketStatus.SPAM) {
+                    btnDeleteTicket.setVisibility(View.VISIBLE);
+                    btnDeleteTicket.setOnClickListener(v -> showDeleteConfirmation());
+                } else {
+                    btnDeleteTicket.setVisibility(View.GONE);
+                }
+            }
+            
             // Show reason if exists (for accepted/rejected tickets)
-            if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty()) {
-                if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+            if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty() && !ticket.getReason().equalsIgnoreCase("null")) {
+                if (labelReason != null) {
+                    labelReason.setText("Engineer's Reason");
+                    labelReason.setVisibility(View.VISIBLE);
+                }
                 if (tvReason != null) {
                     tvReason.setVisibility(View.VISIBLE);
                     tvReason.setText(ticket.getReason());
                 }
+            } else {
+                // Hide if no reason or null
+                if (labelReason != null) labelReason.setVisibility(View.GONE);
+                if (tvReason != null) tvReason.setVisibility(View.GONE);
             }
         }
+    }
+    
+    private void showDeleteConfirmation() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Delete Ticket")
+            .setMessage("Are you sure you want to delete this ticket? This will remove it from your view only.")
+            .setPositiveButton("Delete", (dialog, which) -> {
+                String dbId = ticket.getDbId();
+                if (dbId != null && !dbId.isEmpty()) {
+                    TicketRepository.softDeleteTicketForCitizen(dbId, new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Ticket deleted", Toast.LENGTH_SHORT).show();
+                                setResult(RESULT_OK);
+                                finish();
+                            });
+                        }
+                        
+                        @Override
+                        public void onError(String message) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void showReasonDialog(String action, String title, ReasonCallback callback) {

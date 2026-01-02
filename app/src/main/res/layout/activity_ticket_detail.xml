@@ -221,6 +221,18 @@ android:padding="16dp">
         android:layout_marginBottom="24dp"
         android:visibility="gone" />
 
+<!-- Delete Button (for completed/rejected/spam tickets) -->
+    <Button
+        android:id="@+id/btnDeleteTicket"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delete Ticket"
+        android:textColor="@android:color/white"
+        android:background="@android:color/holo_red_dark"
+        android:visibility="gone"
+        android:layout_marginTop="16dp"
+        android:padding="12dp" />
+
 </LinearLayout>
 
     </ScrollView>
