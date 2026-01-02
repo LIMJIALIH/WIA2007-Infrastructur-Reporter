@@ -222,11 +222,11 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="Assigned to: John Doe"
+                        android:text="Assigned to: null"
                         android:textColor="@color/stat_new_today"
                         android:textSize="12sp"
                         android:textStyle="bold"
-                        android:visibility="gone" />
+                        android:visibility="visible" />
                     <!-- Council Notes/Instructions -->
                     <TextView
                         android:id="@+id/tvCouncilNotesLabel"
@@ -237,16 +237,17 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:textStyle="bold"
-                        android:visibility="gone" />
+                        android:visibility="visible" />
 
                     <TextView
                         android:id="@+id/tvCouncilNotes"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
+                        android:text="null"
                         android:textColor="#2196F3"
                         android:textSize="12sp"
-                        android:visibility="gone" />
+                        android:visibility="visible" />
 
                 </LinearLayout>
 

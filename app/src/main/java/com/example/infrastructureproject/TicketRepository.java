@@ -176,8 +176,15 @@ public class TicketRepository {
                         "" // image name - will be set from image URL
                     );
                     
-                    // Set status
+                    // Set database ID and status
+                    ticket.setDbId(dbId);
                     ticket.setStatus(parseStatus(status));
+                    
+                    // Set engineer's reason (for accepted/rejected tickets)
+                    String engineerNotes = ticketJson.optString("engineer_notes", "");
+                    if (!engineerNotes.isEmpty()) {
+                        ticket.setReason(engineerNotes);
+                    }
                     
                     // Fetch image URL for this ticket
                     String imageUrl = getTicketImageUrl(dbId);
@@ -230,6 +237,58 @@ public class TicketRepository {
     }
     
     /**
+     * Fetch a single ticket by database ID with assignment metadata
+     */
+    public static void getTicketByDbId(String dbId, FetchTicketCallback callback) {
+        new Thread(() -> {
+            try {
+                String url = BuildConfig.SUPABASE_URL +
+                        "/rest/v1/tickets?id=eq." + dbId +
+                        "&select=*,profiles!tickets_reporter_id_fkey(full_name)";
+                String response = SupabaseManager.makeHttpRequest("GET", url, null, SupabaseManager.getAccessToken());
+                JSONArray arr = new JSONArray(response);
+                if (arr.length() == 0) {
+                    if (callback != null) callback.onError("Ticket not found");
+                    return;
+                }
+                JSONObject t = arr.getJSONObject(0);
+                String ticketId = t.optString("ticket_id", "");
+                String type = t.optString("issue_type", "Other");
+                String severity = t.optString("severity", "Low");
+                String location = t.optString("location", "Unknown");
+                String description = t.optString("description", "");
+                String createdAt = t.optString("created_at", "");
+                String formattedDate = formatDate(createdAt);
+                Ticket ticket = new Ticket(ticketId, type, severity, location, description, formattedDate, "");
+                ticket.setDbId(dbId);
+                ticket.setStatus(parseStatus(t.optString("status", "Pending")));
+                ticket.setAssignedTo(t.optString("assigned_engineer_name", ""));
+                ticket.setCouncilNotes(t.optString("council_notes", ""));
+                // Set engineer's reason for accept/reject
+                String engineerNotes = t.optString("engineer_notes", "");
+                if (!engineerNotes.isEmpty()) {
+                    ticket.setReason(engineerNotes);
+                }
+                String reporterId = t.optString("reporter_id", "");
+                ticket.setReporterId(reporterId);
+                // Reporter full name if available from join
+                JSONObject profile = t.optJSONObject("profiles");
+                if (profile != null) {
+                    ticket.setUsername(profile.optString("full_name", "Anonymous"));
+                } else {
+                    ticket.setUsername(getReporterName(reporterId));
+                }
+                String imageUrl = getTicketImageUrl(dbId);
+                if (imageUrl != null) ticket.setImageUrl(imageUrl);
+                if (callback != null) callback.onSuccess(ticket);
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching ticket by id", e);
+                if (callback != null) callback.onError("Error: " + e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
      * Get ALL tickets from Supabase (for council/management dashboard)
      */
     public static void getAllTickets(FetchTicketsCallback callback) {
@@ -270,6 +329,7 @@ public class TicketRepository {
                         ""
                     );
                     
+                    ticket.setDbId(dbId);
                     ticket.setStatus(parseStatus(ticketJson.optString("status", "pending")));
                     ticket.setImageUrl(imageUrl);
                     ticket.setReporterId(reporterId);
@@ -376,6 +436,215 @@ public class TicketRepository {
         }
         
         return "Anonymous";
+    }
+    
+    /**
+     * Get tickets assigned to an engineer with statistics
+     * Fetches all tickets assigned to the current engineer and calculates:
+     * - New Today: tickets assigned today
+     * - This Week: tickets assigned this week
+     * - High Priority: pending high severity tickets
+     * - Avg Response: average response time
+     */
+    public static void getEngineerTicketsWithStats(String engineerId, EngineerStatsCallback callback) {
+        new Thread(() -> {
+            try {
+                // Fetch all tickets assigned to this engineer
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?assigned_engineer_id=eq." + engineerId + "&order=created_at.desc";
+                
+                String response = SupabaseManager.makeHttpRequest(
+                    "GET",
+                    url,
+                    null,
+                    SupabaseManager.getAccessToken()
+                );
+                
+                JSONArray ticketsArray = new JSONArray(response);
+                List<Ticket> allTickets = new ArrayList<>();
+                
+                // Get today's date for comparison
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                String todayDate = dateFormat.format(new Date());
+                
+                // Get start of week (7 days ago)
+                long weekAgoMillis = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000);
+                String weekAgoDate = dateFormat.format(new Date(weekAgoMillis));
+                
+                int newToday = 0;
+                int thisWeek = 0;
+                int highPriority = 0;
+                long totalResponseTime = 0;
+                int responseCount = 0;
+                
+                for (int i = 0; i < ticketsArray.length(); i++) {
+                    JSONObject ticketJson = ticketsArray.getJSONObject(i);
+                    
+                    // Parse ticket data
+                    String ticketId = ticketJson.optString("ticket_id", "");
+                    String dbId = ticketJson.optString("id", "");
+                    String type = ticketJson.optString("issue_type", "Other");
+                    String severity = ticketJson.optString("severity", "Low");
+                    String location = ticketJson.optString("location", "Unknown");
+                    String description = ticketJson.optString("description", "");
+                    String createdAt = ticketJson.optString("created_at", "");
+                    String assignedAt = ticketJson.optString("assigned_at", "");
+                    String status = ticketJson.optString("status", "Pending");
+                    String reporterId = ticketJson.optString("reporter_id", "");
+                    
+                    // Format date
+                    String formattedDate = formatDate(createdAt);
+                    
+                    // Create ticket object
+                    Ticket ticket = new Ticket(
+                        ticketId,
+                        type,
+                        severity,
+                        location,
+                        description,
+                        formattedDate,
+                        ""
+                    );
+                    ticket.setDbId(dbId);
+                    ticket.setStatus(parseStatus(status));
+                    // Assignment metadata for engineer view
+                    ticket.setAssignedTo(ticketJson.optString("assigned_engineer_name", ""));
+                    ticket.setCouncilNotes(ticketJson.optString("council_notes", ""));
+                    
+                    // Get reporter name
+                    String reporterName = getReporterName(reporterId);
+                    ticket.setUsername(reporterName);
+                    
+                    // Fetch image URL
+                    String imageUrl = getTicketImageUrl(dbId);
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
+                        ticket.setImageUrl(imageUrl);
+                    }
+                    
+                    allTickets.add(ticket);
+                    
+                    // Calculate statistics
+                    // Extract date from created_at (format: 2025-01-02T10:30:00+00:00)
+                    String ticketDate = createdAt.substring(0, 10); // Get YYYY-MM-DD
+                    
+                    // New Today
+                    if (ticketDate.equals(todayDate)) {
+                        newToday++;
+                    }
+                    
+                    // This Week
+                    if (ticketDate.compareTo(weekAgoDate) >= 0) {
+                        thisWeek++;
+                    }
+                    
+                    // High Priority (Accepted tickets assigned to engineer with high severity)
+                    // These are tickets assigned but not yet marked as completed by engineer
+                    if (severity.equalsIgnoreCase("High") && status.equalsIgnoreCase("Accepted")) {
+                        highPriority++;
+                    }
+                    
+                    // Calculate response time based on first engineer action after assignment
+                    if (!assignedAt.isEmpty()) {
+                        try {
+                            SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+                            Date assigned = isoFormat.parse(assignedAt.substring(0, 19));
+                            // First action among ACCEPTED/REJECTED/SPAM
+                            String actionUrl = BuildConfig.SUPABASE_URL + 
+                                "/rest/v1/ticket_actions?ticket_id=eq." + dbId + 
+                                "&action_type=in.(ACCEPTED,REJECTED,SPAM)&order=created_at.asc&limit=1";
+                            String actionResponse = SupabaseManager.makeHttpRequest("GET", actionUrl, null, SupabaseManager.getAccessToken());
+                            JSONArray actionsArray = new JSONArray(actionResponse);
+                            
+                            if (actionsArray.length() > 0) {
+                                String acceptedAt = actionsArray.getJSONObject(0).optString("created_at", "");
+                                if (!acceptedAt.isEmpty()) {
+                                    Date accepted = isoFormat.parse(acceptedAt.substring(0, 19));
+                                    long responseTime = accepted.getTime() - assigned.getTime();
+                                    totalResponseTime += responseTime;
+                                    responseCount++;
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error calculating response time", e);
+                        }
+                    }
+                }
+                
+                // Calculate average response time
+                String avgResponse;
+                if (responseCount > 0) {
+                    long avgMillis = totalResponseTime / responseCount;
+                    long avgHours = avgMillis / (1000 * 60 * 60);
+                    if (avgHours < 1) {
+                        avgResponse = "< 1 hour";
+                    } else {
+                        avgResponse = "< " + avgHours + " hours";
+                    }
+                } else {
+                    avgResponse = "< 2 hours"; // Default
+                }
+                
+                if (callback != null) {
+                    callback.onSuccess(allTickets, newToday, thisWeek, highPriority, avgResponse);
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error fetching engineer tickets", e);
+                if (callback != null) {
+                    callback.onError("Error: " + e.getMessage());
+                }
+            }
+        }).start();
+    }
+    
+    /**
+     * Assign a ticket to an engineer
+     * Updates the ticket in Supabase with assigned engineer details
+     * Sets status to UNDER_REVIEW for engineer to process
+     */
+    public static void assignTicketToEngineer(
+            String ticketDbId,
+            String engineerId, 
+            String engineerName,
+            String instructions,
+            AssignTicketCallback callback) {
+        
+        new Thread(() -> {
+            try {
+                // Prepare update data
+                JSONObject updateData = new JSONObject();
+                updateData.put("assigned_engineer_id", engineerId);
+                updateData.put("assigned_engineer_name", engineerName);
+                // Set status to UNDER_REVIEW so it appears in engineer pending
+                updateData.put("status", "UNDER_REVIEW");
+                updateData.put("assigned_at", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date()));
+                
+                if (instructions != null && !instructions.isEmpty()) {
+                    updateData.put("council_notes", instructions);
+                }
+                
+                // Update ticket in Supabase
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
+                
+                String response = SupabaseManager.makeHttpRequest(
+                    "PATCH",
+                    url,
+                    updateData.toString(),
+                    SupabaseManager.getAccessToken()
+                );
+                
+                Log.d(TAG, "Ticket assigned successfully");
+                
+                if (callback != null) {
+                    callback.onSuccess();
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error assigning ticket", e);
+                if (callback != null) {
+                    callback.onError("Error: " + e.getMessage());
+                }
+            }
+        }).start();
     }
     
     /**
@@ -555,6 +824,12 @@ public class TicketRepository {
         void onError(String message);
     }
     
+    // Single ticket fetch
+    public interface FetchTicketCallback {
+        void onSuccess(Ticket ticket);
+        void onError(String message);
+    }
+    
     public interface StatsCallback {
         void onSuccess(int total, int pending, int accepted, int rejected);
         void onError(String message);
@@ -568,6 +843,64 @@ public class TicketRepository {
     public interface EngineersCallback {
         void onSuccess(List<Engineer> engineers);
         void onError(String message);
+    }
+    
+    public interface EngineerStatsCallback {
+        void onSuccess(List<Ticket> allTickets, int newToday, int thisWeek, int highPriority, String avgResponse);
+        void onError(String message);
+    }
+    
+    public interface AssignTicketCallback {
+        void onSuccess();
+        void onError(String message);
+    }
+
+    /**
+     * Engineer processes a ticket (Accept / Reject / Spam)
+     * - Updates ticket status in tickets table
+     * - Inserts a row in ticket_actions to log response time and reason
+     */
+    public static void engineerProcessTicket(
+            String ticketDbId,
+            String engineerId,
+            String actionType, // ACCEPTED | REJECTED | SPAM
+            String reason,
+            AssignTicketCallback callback) {
+        new Thread(() -> {
+            try {
+                // Update status in tickets table
+                String statusValue;
+                switch (actionType) {
+                    case "ACCEPTED": statusValue = "Accepted"; break;
+                    case "REJECTED": statusValue = "Rejected"; break;
+                    case "SPAM": statusValue = "Spam"; break;
+                    default: statusValue = "Pending"; break;
+                }
+                JSONObject updateData = new JSONObject();
+                updateData.put("status", statusValue);
+                if (reason != null && !reason.isEmpty()) {
+                    updateData.put("engineer_notes", reason);
+                }
+                String updateUrl = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
+                SupabaseManager.makeHttpRequest("PATCH", updateUrl, updateData.toString(), SupabaseManager.getAccessToken());
+
+                // Insert ticket action
+                JSONObject actionData = new JSONObject();
+                actionData.put("ticket_id", ticketDbId);
+                actionData.put("created_by", engineerId);
+                actionData.put("action_type", actionType);
+                if (reason != null && !reason.isEmpty()) {
+                    actionData.put("reason", reason);
+                }
+                String actionUrl = BuildConfig.SUPABASE_URL + "/rest/v1/ticket_actions";
+                SupabaseManager.makeHttpRequest("POST", actionUrl, actionData.toString(), SupabaseManager.getAccessToken());
+
+                if (callback != null) callback.onSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Error processing ticket", e);
+                if (callback != null) callback.onError("Error: " + e.getMessage());
+            }
+        }).start();
     }
     
     // Engineer data class

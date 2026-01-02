@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class Ticket implements Serializable {
     private String id;
+    private String dbId; // Database ID from Supabase
     private String type;
     private String severity;
     private String location;
@@ -43,6 +44,9 @@ public class Ticket implements Serializable {
     // Getters and setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+
+    public String getDbId() { return dbId; }
+    public void setDbId(String dbId) { this.dbId = dbId; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }

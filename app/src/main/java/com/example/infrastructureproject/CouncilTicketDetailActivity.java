@@ -37,6 +37,7 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private LinearLayout actionButtonsLayout;
 
     private String ticketId;
+    private String ticketDbId; // Database ID for updates
     private String ticketType;
     private String ticketSeverity;
     private String ticketLocation;
@@ -86,6 +87,7 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private void getTicketDataFromIntent() {
         Intent intent = getIntent();
         ticketId = intent.getStringExtra("TICKET_ID");
+        ticketDbId = intent.getStringExtra("TICKET_DB_ID"); // Get database ID
         ticketType = intent.getStringExtra("TICKET_TYPE");
         ticketSeverity = intent.getStringExtra("TICKET_SEVERITY");
         ticketLocation = intent.getStringExtra("TICKET_LOCATION");
@@ -130,38 +132,52 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
             ivTicketImage.setImageResource(ticketImageResId);
         }
 
-        // Check if ticket is completed and show assigned engineer
-        TicketManager ticketManager = TicketManager.getInstance();
-        Ticket ticket = ticketManager.getTicketById(ticketId);
-        
-        // Show council notes if they exist
-        if (ticket != null && ticket.getCouncilNotes() != null && !ticket.getCouncilNotes().isEmpty()) {
-            tvCouncilNotesLabel.setVisibility(View.VISIBLE);
-            tvCouncilNotes.setVisibility(View.VISIBLE);
-            tvCouncilNotes.setText(ticket.getCouncilNotes());
-        } else {
-            tvCouncilNotesLabel.setVisibility(View.GONE);
-            tvCouncilNotes.setVisibility(View.GONE);
-        }
-        
-        if (ticket != null && ticket.getStatus() == Ticket.TicketStatus.ACCEPTED && ticket.getAssignedTo() != null) {
-            tvAssignedTo.setText("Assigned to: " + ticket.getAssignedTo());
-            tvAssignedTo.setVisibility(View.VISIBLE);
-            // Hide action buttons when ticket is already assigned
-            if (actionButtonsLayout != null) {
-                actionButtonsLayout.setVisibility(View.GONE);
-            }
-        } else if (ticket != null && ticket.getStatus() == Ticket.TicketStatus.SPAM) {
-            // Hide action buttons when ticket is marked as spam
-            tvAssignedTo.setVisibility(View.GONE);
-            if (actionButtonsLayout != null) {
-                actionButtonsLayout.setVisibility(View.GONE);
-            }
-        } else {
-            tvAssignedTo.setVisibility(View.GONE);
-            if (actionButtonsLayout != null) {
-                actionButtonsLayout.setVisibility(View.VISIBLE);
-            }
+        // Fetch latest ticket from Supabase so we reflect assignment state
+        if (ticketDbId != null && !ticketDbId.isEmpty()) {
+            TicketRepository.getTicketByDbId(ticketDbId, new TicketRepository.FetchTicketCallback() {
+                @Override
+                public void onSuccess(Ticket ticket) {
+                    runOnUiThread(() -> {
+                        // Council notes - always show, display 'null' if empty
+                        tvCouncilNotesLabel.setVisibility(View.VISIBLE);
+                        tvCouncilNotes.setVisibility(View.VISIBLE);
+                        if (ticket.getCouncilNotes() != null && !ticket.getCouncilNotes().isEmpty()) {
+                            tvCouncilNotes.setText(ticket.getCouncilNotes());
+                        } else {
+                            tvCouncilNotes.setText("null");
+                        }
+
+                        // Assigned engineer - always show, display 'null' if not assigned
+                        tvAssignedTo.setVisibility(View.VISIBLE);
+                        boolean isAssigned = ticket.getAssignedTo() != null && !ticket.getAssignedTo().isEmpty();
+                        if (isAssigned) {
+                            tvAssignedTo.setText("Assigned to: " + ticket.getAssignedTo());
+                        } else {
+                            tvAssignedTo.setText("Assigned to: null");
+                        }
+
+                        // Hide assign/spam buttons when assigned or spam
+                        if (actionButtonsLayout != null) {
+                            if (ticket.getStatus() == Ticket.TicketStatus.UNDER_REVIEW ||
+                                ticket.getStatus() == Ticket.TicketStatus.ACCEPTED ||
+                                ticket.getStatus() == Ticket.TicketStatus.REJECTED ||
+                                ticket.getStatus() == Ticket.TicketStatus.SPAM) {
+                                actionButtonsLayout.setVisibility(View.GONE);
+                            } else {
+                                actionButtonsLayout.setVisibility(View.VISIBLE);
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(String message) {
+                    runOnUiThread(() -> {
+                        // If fetch fails, keep current UI; optionally hide buttons if we know it's assigned
+                        android.widget.Toast.makeText(CouncilTicketDetailActivity.this, "Error loading ticket: " + message, android.widget.Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
         }
     }
 
@@ -269,23 +285,37 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
 
             String instructions = etInstructionsDialog.getText().toString().trim();
             
-            // Update ticket status to ACCEPTED (Completed) using TicketManager
-            TicketManager ticketManager = TicketManager.getInstance();
-            Ticket ticket = ticketManager.getTicketById(ticketId);
-            if (ticket != null) {
-                ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
-                ticket.setAssignedTo(selectedEngineer[0].getName());
-                // Save council notes/instructions
-                if (!instructions.isEmpty()) {
-                    ticket.setCouncilNotes(instructions);
+            // Assign ticket to engineer using Supabase
+            TicketRepository.assignTicketToEngineer(
+                ticketDbId,
+                selectedEngineer[0].getId(),
+                selectedEngineer[0].getName(),
+                instructions,
+                new TicketRepository.AssignTicketCallback() {
+                    @Override
+                    public void onSuccess() {
+                        runOnUiThread(() -> {
+                            Toast.makeText(CouncilTicketDetailActivity.this, 
+                                "Ticket assigned to " + selectedEngineer[0].getName(), 
+                                Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                            
+                            // Return to dashboard with result to trigger refresh
+                            setResult(RESULT_OK);
+                            finish();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(CouncilTicketDetailActivity.this, 
+                                "Error assigning ticket: " + message, 
+                                Toast.LENGTH_SHORT).show();
+                        });
+                    }
                 }
-                ticketManager.updateTicket(ticket);
-            }
-            
-            // TODO: Implement Supabase assignment with instructions
-            Toast.makeText(this, "Ticket assigned to " + selectedEngineer[0].getName(), Toast.LENGTH_SHORT).show();
-            dialog.dismiss();
-            finish();
+            );
         });
 
         dialog.show();

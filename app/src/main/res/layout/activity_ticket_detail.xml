@@ -196,7 +196,30 @@ android:padding="16dp">
         android:background="#F5F5F5"
         android:textSize="16sp"
         android:textColor="@android:color/black"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="16dp" />
+
+<!-- Row 9: Reason (for Accepted/Rejected tickets) -->
+    <TextView
+        android:id="@+id/labelReason"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reason"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="4dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvReason"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:background="#F5F5F5"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone" />
 
 </LinearLayout>
 

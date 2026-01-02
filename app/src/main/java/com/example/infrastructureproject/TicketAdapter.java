@@ -156,14 +156,14 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 Button btnDelete = itemView.findViewById(R.id.btnDelete);
 
                 // Show/hide buttons based on ticket status
-                if (ticket.getStatus() == Ticket.TicketStatus.PENDING) {
-                    // Pending - show action buttons, hide delete
+                if (ticket.getStatus() == Ticket.TicketStatus.UNDER_REVIEW) {
+                    // Pending Review (UNDER_REVIEW) - show action buttons, hide delete
                     if (btnAccept != null) btnAccept.setVisibility(View.VISIBLE);
                     if (btnReject != null) btnReject.setVisibility(View.VISIBLE);
                     if (btnSpam != null) btnSpam.setVisibility(View.VISIBLE);
                     if (btnDelete != null) btnDelete.setVisibility(View.GONE);
                 } else {
-                    // Completed - hide action buttons, show delete
+                    // Completed (ACCEPTED, REJECTED, SPAM) - hide action buttons, show delete
                     if (btnAccept != null) btnAccept.setVisibility(View.GONE);
                     if (btnReject != null) btnReject.setVisibility(View.GONE);
                     if (btnSpam != null) btnSpam.setVisibility(View.GONE);

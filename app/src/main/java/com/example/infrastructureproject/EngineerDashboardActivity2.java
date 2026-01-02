@@ -132,14 +132,65 @@ public class EngineerDashboardActivity2 extends AppCompatActivity implements Tic
         spamTickets = new ArrayList<>();
         currentDisplayedTickets = new ArrayList<>();
 
-        // Load mock data - COMMENTED OUT, use Supabase TicketRepository instead
-        // allTickets = MockDataGenerator.generateMockTickets();
+        // Load tickets from Supabase
+        String currentUserId = SupabaseManager.getCurrentUserId();
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            TicketRepository.getEngineerTicketsWithStats(currentUserId, new TicketRepository.EngineerStatsCallback() {
+                @Override
+                public void onSuccess(List<Ticket> tickets, int newToday, int thisWeek, int highPriority, String avgResponse) {
+                    runOnUiThread(() -> {
+                        allTickets.clear();
+                        allTickets.addAll(tickets);
+                        
+                        // Categorize tickets by status
+                        pendingTickets.clear();
+                        acceptedTickets.clear();
+                        rejectedTickets.clear();
+                        spamTickets.clear();
+                        
+                        for (Ticket ticket : tickets) {
+                            switch (ticket.getStatus()) {
+                                case PENDING:
+                                case ACCEPTED: // Assigned tickets show as Accepted, but appear in Pending for engineer
+                                    pendingTickets.add(ticket);
+                                    break;
+                                case REJECTED:
+                                    rejectedTickets.add(ticket);
+                                    break;
+                                case SPAM:
+                                    spamTickets.add(ticket);
+                                    break;
+                                case UNDER_REVIEW:
+                                    // Legacy status, treat as pending
+                                    pendingTickets.add(ticket);
+                                    break;
+                            }
+                        }
+                        
+                        // Update statistics with real data
+                        tvStatNewTodayValue.setText(String.valueOf(newToday));
+                        tvStatThisWeekValue.setText(String.valueOf(thisWeek));
+                        tvStatAvgResponseValue.setText(avgResponse);
+                        tvStatHighPriorityValue.setText(String.valueOf(highPriority));
+                        
+                        // Update UI
+                        loadDashboardData();
+                    });
+                }
 
-        // Initially all tickets are pending
-        // TODO: Load tickets from Supabase using TicketRepository
-        // for (Ticket ticket : allTickets) {
-        //     pendingTickets.add(ticket);
-        // }
+                @Override
+                public void onError(String message) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(EngineerDashboardActivity2.this, 
+                            "Error loading tickets: " + message, Toast.LENGTH_SHORT).show();
+                        // Still initialize with empty lists
+                        loadDashboardData();
+                    });
+                }
+            });
+        } else {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void initializeViews() {
@@ -307,9 +358,6 @@ public class EngineerDashboardActivity2 extends AppCompatActivity implements Tic
     }
 
     private void loadDashboardData() {
-        // Update statistics
-        updateStatisticsFromTickets();
-
         // Set welcome message with username
         String fullName = SupabaseManager.getCurrentFullName();
         if (fullName != null && !fullName.isEmpty()) {
@@ -327,23 +375,9 @@ public class EngineerDashboardActivity2 extends AppCompatActivity implements Tic
     }
 
     private void updateStatisticsFromTickets() {
-        // Count tickets from today
-        int newToday = (int) pendingTickets.stream()
-                .filter(t -> t.getDateTime().contains("2025-11-16"))
-                .count();
-
-        // Count tickets from this week
-        int thisWeek = pendingTickets.size();
-
-        // Count high priority tickets
-        int highPriority = (int) pendingTickets.stream()
-                .filter(t -> t.getSeverity().equals("High"))
-                .count();
-
-        tvStatNewTodayValue.setText(String.valueOf(newToday));
-        tvStatThisWeekValue.setText(String.valueOf(thisWeek));
-        tvStatAvgResponseValue.setText("< 2 hours");
-        tvStatHighPriorityValue.setText(String.valueOf(highPriority));
+        // Statistics are now updated in real-time from Supabase in initializeDataLists()
+        // This method is kept for backward compatibility but does nothing
+        // The stats are calculated server-side for accuracy
     }
 
     private void selectTab(int tabIndex) {

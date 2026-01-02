@@ -34,6 +34,9 @@ public class TicketDetailActivity extends AppCompatActivity {
     private ImageView ivBack;
     private TextView tvReason;
     private TextView labelReason;
+    private TextView tvReportedBy;
+    private TextView tvAssignedTo;
+    private TextView tvInstructions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +70,9 @@ public class TicketDetailActivity extends AppCompatActivity {
             tvDateTime = findViewById(R.id.tvDateTime);
             tvReason = findViewById(R.id.tvReason);
             labelReason = findViewById(R.id.labelReason);
+            tvReportedBy = findViewById(R.id.tvReportedBy);
+            tvAssignedTo = findViewById(R.id.tvAssignedTo);
+            tvInstructions = findViewById(R.id.tvInstructions);
             btnAccept = findViewById(R.id.btnAccept);
             btnReject = findViewById(R.id.btnReject);
             btnSpam = findViewById(R.id.btnSpam);
@@ -81,6 +87,8 @@ public class TicketDetailActivity extends AppCompatActivity {
             tvLocation = findViewById(R.id.tvLocation);
             tvDateTime = findViewById(R.id.tvDateTime);
             ivClose = findViewById(R.id.ivClose);
+            tvReason = findViewById(R.id.tvReason);
+            labelReason = findViewById(R.id.labelReason);
         }
     }
 
@@ -96,6 +104,10 @@ public class TicketDetailActivity extends AppCompatActivity {
         String imageUrl = getIntent().getStringExtra("image_url"); // Get image URL
         String status = getIntent().getStringExtra("status");
         String reason = getIntent().getStringExtra("reason");
+        String username = getIntent().getStringExtra("username");
+        String assignedTo = getIntent().getStringExtra("assigned_to");
+        String councilNotes = getIntent().getStringExtra("council_notes");
+        String dbId = getIntent().getStringExtra("db_id");
 
         // Create ticket object
         ticket = new Ticket(ticketId, type, severity, location, description, dateTime, imageName);
@@ -132,6 +144,23 @@ public class TicketDetailActivity extends AppCompatActivity {
 
         // Set ticket image
         setTicketImage();
+
+        // Engineer-specific info binding
+        if (isEngineerView) {
+            if (tvReportedBy != null) {
+                tvReportedBy.setText("Reported by: " + (username != null && !username.isEmpty() ? username : "Anonymous"));
+            }
+            if (tvAssignedTo != null && assignedTo != null && !assignedTo.isEmpty()) {
+                tvAssignedTo.setText("Assigned to: " + assignedTo);
+            }
+            if (tvInstructions != null && councilNotes != null && !councilNotes.isEmpty()) {
+                tvInstructions.setText(councilNotes);
+            }
+            // store dbId in tag for button handlers
+            if (dbId != null) {
+                tvTicketId.setTag(dbId);
+            }
+        }
     }
 
     private void setSeverityBackground(String severity) {
@@ -202,84 +231,89 @@ public class TicketDetailActivity extends AppCompatActivity {
 
             if (btnAccept != null) {
                 btnAccept.setOnClickListener(v -> showReasonDialog("Accept", "Accept Ticket", (reason) -> {
-                    ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
-                    ticket.setReason(reason);
-                    TicketManager.getInstance().updateTicket(ticket);
-                    
-                    // Show reason in UI
-                    if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
-                    if (tvReason != null) {
-                        tvReason.setVisibility(View.VISIBLE);
-                        tvReason.setText(reason);
-                    }
-                    
-                    // Hide buttons
-                    btnAccept.setVisibility(View.GONE);
-                    btnReject.setVisibility(View.GONE);
-                    btnSpam.setVisibility(View.GONE);
-                    
-                    // Return result
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("ticket_id", ticket.getId());
-                    resultIntent.putExtra("new_status", "ACCEPTED");
-                    resultIntent.putExtra("reason", reason);
-                    setResult(RESULT_OK, resultIntent);
-                    
-                    Toast.makeText(this, "Ticket Accepted", Toast.LENGTH_SHORT).show();
+                    String dbId = (String) tvTicketId.getTag();
+                    String engineerId = SupabaseManager.getCurrentUserId();
+                    TicketRepository.engineerProcessTicket(dbId, engineerId, "ACCEPTED", reason, new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+                            ticket.setReason(reason);
+                            if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                            if (tvReason != null) { tvReason.setVisibility(View.VISIBLE); tvReason.setText(reason);} 
+                            btnAccept.setVisibility(View.GONE);
+                            btnReject.setVisibility(View.GONE);
+                            btnSpam.setVisibility(View.GONE);
+                            Intent resultIntent = new Intent();
+                            resultIntent.putExtra("ticket_id", ticket.getId());
+                            resultIntent.putExtra("new_status", "ACCEPTED");
+                            resultIntent.putExtra("reason", reason);
+                            setResult(RESULT_OK, resultIntent);
+                            Toast.makeText(TicketDetailActivity.this, "Ticket Accepted", Toast.LENGTH_SHORT).show();
+                        }
+                        @Override
+                        public void onError(String message) {
+                            Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }));
             }
 
             if (btnReject != null) {
                 btnReject.setOnClickListener(v -> showReasonDialog("Reject", "Reject Ticket", (reason) -> {
-                    ticket.setStatus(Ticket.TicketStatus.REJECTED);
-                    ticket.setReason(reason);
-                    TicketManager.getInstance().updateTicket(ticket);
-                    
-                    // Show reason in UI
-                    if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
-                    if (tvReason != null) {
-                        tvReason.setVisibility(View.VISIBLE);
-                        tvReason.setText(reason);
-                    }
-                    
-                    // Hide buttons
-                    btnAccept.setVisibility(View.GONE);
-                    btnReject.setVisibility(View.GONE);
-                    btnSpam.setVisibility(View.GONE);
-                    
-                    // Return result
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("ticket_id", ticket.getId());
-                    resultIntent.putExtra("new_status", "REJECTED");
-                    resultIntent.putExtra("reason", reason);
-                    setResult(RESULT_OK, resultIntent);
-                    
-                    Toast.makeText(this, "Ticket Rejected", Toast.LENGTH_SHORT).show();
+                    String dbId = (String) tvTicketId.getTag();
+                    String engineerId = SupabaseManager.getCurrentUserId();
+                    TicketRepository.engineerProcessTicket(dbId, engineerId, "REJECTED", reason, new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            ticket.setStatus(Ticket.TicketStatus.REJECTED);
+                            ticket.setReason(reason);
+                            if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                            if (tvReason != null) { tvReason.setVisibility(View.VISIBLE); tvReason.setText(reason);} 
+                            btnAccept.setVisibility(View.GONE);
+                            btnReject.setVisibility(View.GONE);
+                            btnSpam.setVisibility(View.GONE);
+                            Intent resultIntent = new Intent();
+                            resultIntent.putExtra("ticket_id", ticket.getId());
+                            resultIntent.putExtra("new_status", "REJECTED");
+                            resultIntent.putExtra("reason", reason);
+                            setResult(RESULT_OK, resultIntent);
+                            Toast.makeText(TicketDetailActivity.this, "Ticket Rejected", Toast.LENGTH_SHORT).show();
+                        }
+                        @Override
+                        public void onError(String message) {
+                            Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }));
             }
 
             if (btnSpam != null) {
                 btnSpam.setOnClickListener(v -> {
-                    ticket.setStatus(Ticket.TicketStatus.SPAM);
-                    TicketManager.getInstance().updateTicket(ticket);
-                    
-                    // Hide buttons
-                    btnAccept.setVisibility(View.GONE);
-                    btnReject.setVisibility(View.GONE);
-                    btnSpam.setVisibility(View.GONE);
-                    
-                    // Return result
-                    Intent resultIntent = new Intent();
-                    resultIntent.putExtra("ticket_id", ticket.getId());
-                    resultIntent.putExtra("new_status", "SPAM");
-                    setResult(RESULT_OK, resultIntent);
-                    
-                    Toast.makeText(this, "Marked as Spam", Toast.LENGTH_SHORT).show();
+                    String dbId = (String) tvTicketId.getTag();
+                    String engineerId = SupabaseManager.getCurrentUserId();
+                    TicketRepository.engineerProcessTicket(dbId, engineerId, "SPAM", "", new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            ticket.setStatus(Ticket.TicketStatus.SPAM);
+                            btnAccept.setVisibility(View.GONE);
+                            btnReject.setVisibility(View.GONE);
+                            btnSpam.setVisibility(View.GONE);
+                            Intent resultIntent = new Intent();
+                            resultIntent.putExtra("ticket_id", ticket.getId());
+                            resultIntent.putExtra("new_status", "SPAM");
+                            setResult(RESULT_OK, resultIntent);
+                            Toast.makeText(TicketDetailActivity.this, "Marked as Spam", Toast.LENGTH_SHORT).show();
+                        }
+                        @Override
+                        public void onError(String message) {
+                            Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 });
             }
 
             // Hide buttons if ticket is already processed
-            if (ticket != null && ticket.getStatus() != Ticket.TicketStatus.PENDING) {
+            if (ticket != null && ticket.getStatus() != Ticket.TicketStatus.UNDER_REVIEW) {
                 if (btnAccept != null) btnAccept.setVisibility(View.GONE);
                 if (btnReject != null) btnReject.setVisibility(View.GONE);
                 if (btnSpam != null) btnSpam.setVisibility(View.GONE);
@@ -297,6 +331,15 @@ public class TicketDetailActivity extends AppCompatActivity {
             // Citizen view - just close button
             if (ivClose != null) {
                 ivClose.setOnClickListener(v -> finish());
+            }
+            
+            // Show reason if exists (for accepted/rejected tickets)
+            if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty()) {
+                if (labelReason != null) labelReason.setVisibility(View.VISIBLE);
+                if (tvReason != null) {
+                    tvReason.setVisibility(View.VISIBLE);
+                    tvReason.setText(ticket.getReason());
+                }
             }
         }
     }

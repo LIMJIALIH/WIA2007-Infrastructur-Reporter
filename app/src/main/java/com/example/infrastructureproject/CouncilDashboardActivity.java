@@ -385,9 +385,11 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
                     for (Ticket ticket : allTickets) {
                         switch (ticket.getStatus()) {
                             case PENDING:
+                                // Only unassigned pending tickets
                                 pendingTickets.add(ticket);
                                 break;
                             case ACCEPTED:
+                            case UNDER_REVIEW: // Both assigned and completed tickets
                                 completedTickets.add(ticket);
                                 break;
                             case REJECTED:
@@ -563,6 +565,7 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
     public void onView(Ticket ticket, int position) {
         Intent intent = new Intent(this, CouncilTicketDetailActivity.class);
         intent.putExtra("TICKET_ID", ticket.getId());
+        intent.putExtra("TICKET_DB_ID", ticket.getDbId()); // Pass database ID for updates
         intent.putExtra("TICKET_TYPE", ticket.getType());
         intent.putExtra("TICKET_SEVERITY", ticket.getSeverity());
         intent.putExtra("TICKET_LOCATION", ticket.getLocation());
@@ -571,7 +574,17 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
         intent.putExtra("TICKET_IMAGE", ticket.getImageResId(this));
         intent.putExtra("TICKET_IMAGE_URL", ticket.getImageUrl()); // Pass image URL
         intent.putExtra("TICKET_USERNAME", ticket.getUsername());
-        startActivity(intent);
+        startActivityForResult(intent, 100); // Request code 100 for assignment
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == RESULT_OK) {
+            // Refresh dashboard after assignment
+            loadDashboardData();
+            Toast.makeText(this, "Dashboard refreshed", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
