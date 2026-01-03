@@ -14,7 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.infrastructurereporter.R;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +51,8 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Explicitly allow screenshots
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_council_ticket_detail);
 
         // Initialize views
@@ -140,11 +142,24 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(Ticket ticket) {
                     runOnUiThread(() -> {
-                        // Council notes - only show if not empty/null
+                        // Council notes - show council_notes OR engineer_notes (reason)
+                        String notesToDisplay = "";
                         if (ticket.getCouncilNotes() != null && !ticket.getCouncilNotes().isEmpty() && !ticket.getCouncilNotes().equalsIgnoreCase("null")) {
+                            notesToDisplay = ticket.getCouncilNotes();
+                        }
+                        // If engineer provided reason, append or show it
+                        if (ticket.getReason() != null && !ticket.getReason().isEmpty() && !ticket.getReason().equalsIgnoreCase("null")) {
+                            if (!notesToDisplay.isEmpty()) {
+                                notesToDisplay += "\n\nEngineer's Response: " + ticket.getReason();
+                            } else {
+                                notesToDisplay = "Engineer's Response: " + ticket.getReason();
+                            }
+                        }
+                        
+                        if (!notesToDisplay.isEmpty()) {
                             tvCouncilNotesLabel.setVisibility(View.VISIBLE);
                             tvCouncilNotes.setVisibility(View.VISIBLE);
-                            tvCouncilNotes.setText(ticket.getCouncilNotes());
+                            tvCouncilNotes.setText(notesToDisplay);
                         } else {
                             tvCouncilNotesLabel.setVisibility(View.GONE);
                             tvCouncilNotes.setVisibility(View.GONE);
@@ -216,16 +231,22 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
                 .setTitle("Mark as Spam")
                 .setMessage("Are you sure you want to mark this ticket as spam? This action cannot be undone.")
                 .setPositiveButton("Yes, Mark as Spam", (dialog, which) -> {
-                    // Update ticket status to SPAM using TicketManager
-                    TicketManager ticketManager = TicketManager.getInstance();
-                    Ticket ticket = ticketManager.getTicketById(ticketId);
-                    if (ticket != null) {
-                        ticket.setStatus(Ticket.TicketStatus.SPAM);
-                        ticketManager.updateTicket(ticket);
-                    }
-                    // TODO: Implement Supabase spam marking
-                    Toast.makeText(this, "Ticket marked as spam", Toast.LENGTH_SHORT).show();
-                    finish();
+                    // Update ticket status to SPAM in Supabase with null reason
+                    TicketRepository.markTicketAsSpam(ticketDbId, new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            runOnUiThread(() -> {
+                                Toast.makeText(CouncilTicketDetailActivity.this, "Ticket marked as spam", Toast.LENGTH_SHORT).show();
+                                finish();
+                            });
+                        }
+                        @Override
+                        public void onError(String message) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(CouncilTicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -404,14 +425,14 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private void showDeleteConfirmation() {
         new AlertDialog.Builder(this)
             .setTitle("Delete Ticket")
-            .setMessage("Are you sure you want to delete this ticket from council view? Citizens and engineers can still see it.")
+            .setMessage("Are you sure you want to remove this ticket from your view? You won't see it again after logging in.")
             .setPositiveButton("Delete", (dialog, which) -> {
                 if (ticketDbId != null && !ticketDbId.isEmpty()) {
                     TicketRepository.softDeleteTicketForCouncil(ticketDbId, new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
                             runOnUiThread(() -> {
-                                Toast.makeText(CouncilTicketDetailActivity.this, "Ticket deleted from council view", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(CouncilTicketDetailActivity.this, "Ticket removed from your view", Toast.LENGTH_SHORT).show();
                                 setResult(RESULT_OK);
                                 finish();
                             });

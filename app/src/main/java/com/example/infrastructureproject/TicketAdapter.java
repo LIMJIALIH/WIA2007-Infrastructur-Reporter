@@ -14,8 +14,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.infrastructurereporter.R;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +23,7 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
     private List<Ticket> tickets;
     private OnTicketActionListener listener;
     private boolean isEngineerMode;
+    private boolean isCouncilMode;
 
     public interface OnTicketActionListener {
         void onAccept(Ticket ticket, int position);
@@ -35,14 +34,19 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
     }
 
     public TicketAdapter(Context context, OnTicketActionListener listener) {
-        this(context, listener, false);
+        this(context, listener, false, false);
     }
 
     public TicketAdapter(Context context, OnTicketActionListener listener, boolean isEngineerMode) {
+        this(context, listener, isEngineerMode, false);
+    }
+    
+    public TicketAdapter(Context context, OnTicketActionListener listener, boolean isEngineerMode, boolean isCouncilMode) {
         this.context = context;
         this.tickets = new ArrayList<>();
         this.listener = listener;
         this.isEngineerMode = isEngineerMode;
+        this.isCouncilMode = isCouncilMode;
     }
 
     public void setTickets(List<Ticket> tickets) {
@@ -202,10 +206,13 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                     });
                 }
             } else {
-                // Citizen mode - show status text
+                // Citizen/Council mode - show status text
                 if (tvStatus != null) {
                     if (ticket.getStatus() != null) {
-                        String statusText = "Status: " + ticket.getStatusDisplayText();
+                        // Use council-specific status text if in council mode
+                        String statusText = isCouncilMode 
+                            ? "Status: " + ticket.getStatusDisplayTextForCouncil()
+                            : "Status: " + ticket.getStatusDisplayText();
                         tvStatus.setText(statusText);
                     } else {
                         tvStatus.setText("Status: Pending");

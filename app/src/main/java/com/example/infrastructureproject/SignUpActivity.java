@@ -11,7 +11,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.infrastructurereporter.R;
+
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -29,6 +29,8 @@ public class SignUpActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Explicitly allow screenshots
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
 
         setContentView(R.layout.activity_sign_up);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {

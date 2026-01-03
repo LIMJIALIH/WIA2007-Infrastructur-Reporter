@@ -8,7 +8,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.infrastructurereporter.R;
+
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 

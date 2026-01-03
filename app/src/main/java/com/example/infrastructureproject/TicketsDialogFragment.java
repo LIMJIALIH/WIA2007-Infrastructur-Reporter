@@ -13,7 +13,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.infrastructurereporter.R;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +79,9 @@ public class TicketsDialogFragment extends DialogFragment {
                 intent.putExtra("date_time", ticket.getDateTime());
                 intent.putExtra("description", ticket.getDescription());
                 intent.putExtra("image_name", ticket.getImageName());
+                intent.putExtra("image_url", ticket.getImageUrl()); // Pass image URL
                 intent.putExtra("status", ticket.getStatus().toString());
+                intent.putExtra("db_id", ticket.getDbId()); // Pass database ID for delete
                 intent.putExtra("citizen_view", true);
                 if (ticket.getReason() != null) {
                     intent.putExtra("reason", ticket.getReason());
@@ -118,7 +120,7 @@ public class TicketsDialogFragment extends DialogFragment {
         List<Ticket> filtered = new ArrayList<>();
 
         for (Ticket ticket : allTickets) {
-            if (typeString.equalsIgnoreCase("Pending") && ticket.getStatus() == Ticket.TicketStatus.PENDING) {
+            if (typeString.equalsIgnoreCase("Pending") && (ticket.getStatus() == Ticket.TicketStatus.PENDING || ticket.getStatus() == Ticket.TicketStatus.UNDER_REVIEW)) {
                 filtered.add(ticket);
             } else if (typeString.equalsIgnoreCase("Accepted") && ticket.getStatus() == Ticket.TicketStatus.ACCEPTED) {
                 filtered.add(ticket);

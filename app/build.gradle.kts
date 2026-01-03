@@ -17,7 +17,7 @@ val supabaseUrl: String = localProps.getProperty("SUPABASE_URL", "")
 val supabaseKey: String = localProps.getProperty("SUPABASE_KEY", "")
 
 android {
-    namespace = "com.example.infrastructurereporter"
+    namespace = "com.example.infrastructureproject"
     compileSdk = 36
 
     buildFeatures {
@@ -25,7 +25,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.infrastructurereporter"
+        applicationId = "com.example.infrastructureproject"
         minSdk = 25
         targetSdk = 36
         versionCode = 1

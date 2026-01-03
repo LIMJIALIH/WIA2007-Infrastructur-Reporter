@@ -18,8 +18,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.infrastructurereporter.R;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -88,6 +86,8 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Explicitly allow screenshots
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         
         try {
             setContentView(R.layout.activity_council_dashboard);
@@ -175,7 +175,7 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
     }
 
     private void setupRecyclerView() {
-        ticketAdapter = new TicketAdapter(this, this, false); // false = council mode
+        ticketAdapter = new TicketAdapter(this, this, false, true); // false = not engineer, true = council mode
         recyclerViewTickets.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewTickets.setAdapter(ticketAdapter);
         recyclerViewTickets.setNestedScrollingEnabled(false);
@@ -389,11 +389,11 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
                                 pendingTickets.add(ticket);
                                 break;
                             case ACCEPTED:
-                            case UNDER_REVIEW: // Both assigned and completed tickets
+                            case UNDER_REVIEW:
+                            case REJECTED: // REJECTED is shown as COMPLETED for council
                                 completedTickets.add(ticket);
                                 break;
-                            case REJECTED:
-                            case SPAM:
+                            case SPAM: // Only SPAM goes to spam tab
                                 spamTickets.add(ticket);
                                 break;
                         }

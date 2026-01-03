@@ -23,7 +23,6 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.infrastructurereporter.R;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -57,6 +56,8 @@ public class CitizenDashboardActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Explicitly allow screenshots
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_citizen_dashboard);
 
@@ -164,6 +165,7 @@ public class CitizenDashboardActivity extends AppCompatActivity {
                 intent.putExtra("image_name", ticket.getImageName());
                 intent.putExtra("image_url", ticket.getImageUrl()); // Pass image URL
                 intent.putExtra("status", ticket.getStatus().toString());
+                intent.putExtra("db_id", ticket.getDbId()); // Pass database ID for delete
                 intent.putExtra("citizen_view", true);
                 if (ticket.getReason() != null) {
                     intent.putExtra("reason", ticket.getReason());

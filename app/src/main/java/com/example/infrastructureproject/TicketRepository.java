@@ -137,8 +137,8 @@ public class TicketRepository {
     public static void getUserTickets(String userId, FetchTicketsCallback callback) {
         new Thread(() -> {
             try {
-                // Fetch tickets for this user (soft delete filter applied in code if column exists)
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?reporter_id=eq." + userId + "&order=created_at.desc";
+                // Fetch tickets for this user (filter by deleted_by_citizen = false)
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?reporter_id=eq." + userId + "&deleted_by_citizen=eq.false&order=created_at.desc";
                 
                 String response = SupabaseManager.makeHttpRequest(
                     "GET",
@@ -234,11 +234,16 @@ public class TicketRepository {
                 String imagePath = imagesArray.getJSONObject(0).optString("path", "");
                 if (!imagePath.isEmpty()) {
                     // Return full public URL
-                    return BuildConfig.SUPABASE_URL + "/storage/v1/object/public/ticket-images/" + imagePath;
+                    String imageUrl = BuildConfig.SUPABASE_URL + "/storage/v1/object/public/ticket-images/" + imagePath;
+                    Log.d(TAG, "Image URL for ticket " + ticketDbId + ": " + imageUrl);
+                    return imageUrl;
                 }
+            } else {
+                Log.d(TAG, "No image found for ticket " + ticketDbId);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error fetching image URL", e);
+            // ticket_images table might not exist yet - this is okay
+            Log.w(TAG, "Could not fetch image URL (table might not exist): " + e.getMessage());
         }
         return null;
     }
@@ -489,8 +494,8 @@ public class TicketRepository {
     public static void getEngineerTicketsWithStats(String engineerId, EngineerStatsCallback callback) {
         new Thread(() -> {
             try {
-                // Fetch all tickets assigned to this engineer
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?assigned_engineer_id=eq." + engineerId + "&order=created_at.desc";
+                // Fetch all non-deleted tickets assigned to this engineer
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?assigned_engineer_id=eq." + engineerId + "&deleted_by_engineer=eq.false&order=created_at.desc";
                 
                 String response = SupabaseManager.makeHttpRequest(
                     "GET",
@@ -746,7 +751,7 @@ public class TicketRepository {
         try {
             // Note: This assumes you have assigned_to column in tickets table
             // If not, you'll need to add it to the database schema
-            String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?assigned_engineer_id=eq." + engineerId + "&select=severity";
+            String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?assigned_engineer_id=eq." + engineerId + "&deleted_by_engineer=eq.false&select=severity";
             
             String response = SupabaseManager.makeHttpRequest(
                 "GET",
@@ -778,8 +783,8 @@ public class TicketRepository {
     public static void getUserStatistics(String userId, StatsCallback callback) {
         new Thread(() -> {
             try {
-                // Count all tickets for user (soft delete filter applied in code if column exists)
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?reporter_id=eq." + userId + "&select=status";
+                // Count all non-deleted tickets for user
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?reporter_id=eq." + userId + "&deleted_by_citizen=eq.false&select=status";
                 
                 String response = SupabaseManager.makeHttpRequest(
                     "GET",
@@ -926,16 +931,21 @@ public class TicketRepository {
                 String updateUrl = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
                 SupabaseManager.makeHttpRequest("PATCH", updateUrl, updateData.toString(), SupabaseManager.getAccessToken());
 
-                // Insert ticket action
-                JSONObject actionData = new JSONObject();
-                actionData.put("ticket_id", ticketDbId);
-                actionData.put("created_by", engineerId);
-                actionData.put("action_type", actionType);
-                if (reason != null && !reason.isEmpty()) {
-                    actionData.put("reason", reason);
+                // Insert ticket action (optional - table might not exist yet)
+                try {
+                    JSONObject actionData = new JSONObject();
+                    actionData.put("ticket_id", ticketDbId);
+                    actionData.put("created_by", engineerId);
+                    actionData.put("action_type", actionType);
+                    if (reason != null && !reason.isEmpty()) {
+                        actionData.put("reason", reason);
+                    }
+                    String actionUrl = BuildConfig.SUPABASE_URL + "/rest/v1/ticket_actions";
+                    SupabaseManager.makeHttpRequest("POST", actionUrl, actionData.toString(), SupabaseManager.getAccessToken());
+                } catch (Exception actionError) {
+                    // Log but don't fail - ticket_actions table might not exist yet
+                    Log.w(TAG, "Could not insert ticket_action (table might not exist): " + actionError.getMessage());
                 }
-                String actionUrl = BuildConfig.SUPABASE_URL + "/rest/v1/ticket_actions";
-                SupabaseManager.makeHttpRequest("POST", actionUrl, actionData.toString(), SupabaseManager.getAccessToken());
 
                 if (callback != null) callback.onSuccess();
             } catch (Exception e) {
@@ -976,12 +986,22 @@ public class TicketRepository {
     public static void softDeleteTicketForCitizen(String ticketDbId, AssignTicketCallback callback) {
         new Thread(() -> {
             try {
+                // Log detailed information for debugging
+                Log.d(TAG, "=== SOFT DELETE DEBUG ===");
+                Log.d(TAG, "Ticket DB ID: " + ticketDbId);
+                Log.d(TAG, "Access Token: " + (SupabaseManager.getAccessToken() != null ? "EXISTS" : "NULL"));
+                Log.d(TAG, "User ID: " + SupabaseManager.getCurrentUserId());
+                
                 JSONObject updateData = new JSONObject();
                 updateData.put("deleted_by_citizen", true);
                 
                 String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
-                SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
+                Log.d(TAG, "URL: " + url);
+                Log.d(TAG, "Body: " + updateData.toString());
                 
+                String response = SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
+                
+                Log.d(TAG, "Response: " + (response != null ? response : "NULL"));
                 Log.d(TAG, "Ticket soft-deleted for citizen");
                 if (callback != null) callback.onSuccess();
             } catch (Exception e) {
@@ -1009,6 +1029,52 @@ public class TicketRepository {
                 if (callback != null) callback.onSuccess();
             } catch (Exception e) {
                 Log.e(TAG, "Error soft-deleting ticket for council", e);
+                if (callback != null) callback.onError("Error: " + e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
+     * Soft delete ticket for engineer view
+     * Sets deleted_by_engineer = true, hiding it from engineer dashboard
+     * Ticket remains visible to citizen and council
+     */
+    public static void softDeleteTicketForEngineer(String ticketDbId, AssignTicketCallback callback) {
+        new Thread(() -> {
+            try {
+                JSONObject updateData = new JSONObject();
+                updateData.put("deleted_by_engineer", true);
+                
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
+                SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
+                
+                Log.d(TAG, "Ticket soft-deleted for engineer");
+                if (callback != null) callback.onSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Error soft-deleting ticket for engineer", e);
+                if (callback != null) callback.onError("Error: " + e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
+     * Mark ticket as SPAM with null reason
+     * Can be called by council or engineer
+     */
+    public static void markTicketAsSpam(String ticketDbId, AssignTicketCallback callback) {
+        new Thread(() -> {
+            try {
+                JSONObject updateData = new JSONObject();
+                updateData.put("status", "SPAM");
+                updateData.put("reason", JSONObject.NULL);
+                
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
+                SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
+                
+                Log.d(TAG, "Ticket marked as SPAM");
+                if (callback != null) callback.onSuccess();
+            } catch (Exception e) {
+                Log.e(TAG, "Error marking ticket as SPAM", e);
                 if (callback != null) callback.onError("Error: " + e.getMessage());
             }
         }).start();

@@ -19,7 +19,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.infrastructurereporter.R;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,6 +90,8 @@ public class EngineerDashboardActivity2 extends AppCompatActivity implements Tic
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Explicitly allow screenshots
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         
         try {
             setContentView(R.layout.activity_engineer_dashboard);

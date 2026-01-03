@@ -2,6 +2,7 @@ package com.example.infrastructureproject;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -10,7 +11,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.infrastructurereporter.R;
+
 
 public class TicketDetailActivity extends AppCompatActivity {
 
@@ -41,6 +42,8 @@ public class TicketDetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Explicitly allow screenshots
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         
         // Check if opened from engineer dashboard
         isEngineerView = !getIntent().getBooleanExtra("citizen_view", true);
@@ -200,26 +203,52 @@ public class TicketDetailActivity extends AppCompatActivity {
     }
     
     private void loadImageFromUrl(String imageUrl) {
+        Log.d("TicketDetail", "Attempting to load image from URL: " + imageUrl);
+        
         // Load image from URL in background thread
         new Thread(() -> {
             try {
                 java.net.URL url = new java.net.URL(imageUrl);
-                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(url.openConnection().getInputStream());
+                java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+                connection.setDoInput(true);
+                connection.connect();
                 
-                // Update UI on main thread
-                runOnUiThread(() -> {
-                    if (bitmap != null && ivTicketImage != null) {
-                        ivTicketImage.setImageBitmap(bitmap);
-                    }
-                });
+                int responseCode = connection.getResponseCode();
+                Log.d("TicketDetail", "HTTP Response Code: " + responseCode);
+                
+                if (responseCode == 200) {
+                    android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(connection.getInputStream());
+                    
+                    // Update UI on main thread
+                    runOnUiThread(() -> {
+                        if (bitmap != null && ivTicketImage != null) {
+                            ivTicketImage.setImageBitmap(bitmap);
+                            Log.d("TicketDetail", "Image loaded successfully");
+                        } else {
+                            Log.e("TicketDetail", "Bitmap is null after decoding");
+                            setPlaceholderImage();
+                        }
+                    });
+                } else {
+                    Log.e("TicketDetail", "Failed to load image, HTTP " + responseCode);
+                    runOnUiThread(this::setPlaceholderImage);
+                }
             } catch (Exception e) {
                 android.util.Log.e("TicketDetail", "Error loading image from URL: " + e.getMessage(), e);
                 // Fallback to placeholder or default image
-                runOnUiThread(() -> {
-                    // Could set a placeholder image here if needed
-                });
+                runOnUiThread(this::setPlaceholderImage);
             }
         }).start();
+    }
+    
+    private void setPlaceholderImage() {
+        // Try to set a placeholder image - look for a default image resource
+        try {
+            ivTicketImage.setImageResource(R.drawable.ic_image_placeholder);
+        } catch (Exception e) {
+            // If placeholder doesn't exist, just leave it empty
+            Log.d("TicketDetail", "No placeholder image available");
+        }
     }
 
     private void setupListeners() {
@@ -299,11 +328,14 @@ public class TicketDetailActivity extends AppCompatActivity {
                 btnSpam.setOnClickListener(v -> {
                     String dbId = (String) tvTicketId.getTag();
                     String engineerId = SupabaseManager.getCurrentUserId();
-                    TicketRepository.engineerProcessTicket(dbId, engineerId, "SPAM", "", new TicketRepository.AssignTicketCallback() {
+                    TicketRepository.engineerProcessTicket(dbId, engineerId, "SPAM", null, new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
                             runOnUiThread(() -> {
                                 ticket.setStatus(Ticket.TicketStatus.SPAM);
+                                ticket.setReason(null);
+                                if (tvReason != null) tvReason.setVisibility(View.GONE);
+                                if (labelReason != null) labelReason.setVisibility(View.GONE);
                                 btnAccept.setVisibility(View.GONE);
                                 btnReject.setVisibility(View.GONE);
                                 btnSpam.setVisibility(View.GONE);
@@ -359,8 +391,9 @@ public class TicketDetailActivity extends AppCompatActivity {
                 }
             }
             
-            // Show reason if exists (for accepted/rejected tickets)
-            if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty() && !ticket.getReason().equalsIgnoreCase("null")) {
+            // Show reason if exists (for accepted/rejected tickets, but not SPAM)
+            if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty() 
+                && !ticket.getReason().equalsIgnoreCase("null") && ticket.getStatus() != Ticket.TicketStatus.SPAM) {
                 if (labelReason != null) {
                     labelReason.setText("Engineer's Reason");
                     labelReason.setVisibility(View.VISIBLE);
@@ -370,7 +403,7 @@ public class TicketDetailActivity extends AppCompatActivity {
                     tvReason.setText(ticket.getReason());
                 }
             } else {
-                // Hide if no reason or null
+                // Hide if no reason, null, or SPAM status
                 if (labelReason != null) labelReason.setVisibility(View.GONE);
                 if (tvReason != null) tvReason.setVisibility(View.GONE);
             }
@@ -380,15 +413,18 @@ public class TicketDetailActivity extends AppCompatActivity {
     private void showDeleteConfirmation() {
         new android.app.AlertDialog.Builder(this)
             .setTitle("Delete Ticket")
-            .setMessage("Are you sure you want to delete this ticket? This will remove it from your view only.")
+            .setMessage("Are you sure you want to remove this ticket from your view? You won't see it again after logging in.")
             .setPositiveButton("Delete", (dialog, which) -> {
                 String dbId = ticket.getDbId();
+                if (dbId == null || dbId.isEmpty()) {
+                    dbId = getIntent().getStringExtra("db_id");
+                }
                 if (dbId != null && !dbId.isEmpty()) {
                     TicketRepository.softDeleteTicketForCitizen(dbId, new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
                             runOnUiThread(() -> {
-                                Toast.makeText(TicketDetailActivity.this, "Ticket deleted", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(TicketDetailActivity.this, "Ticket removed from your view", Toast.LENGTH_SHORT).show();
                                 setResult(RESULT_OK);
                                 finish();
                             });
@@ -401,6 +437,8 @@ public class TicketDetailActivity extends AppCompatActivity {
                             });
                         }
                     });
+                } else {
+                    Toast.makeText(this, "Error: Ticket ID not found", Toast.LENGTH_SHORT).show();
                 }
             })
             .setNegativeButton("Cancel", null)

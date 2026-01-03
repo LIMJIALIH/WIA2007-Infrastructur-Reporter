@@ -85,6 +85,24 @@ public class Ticket implements Serializable {
             case ACCEPTED:
                 return "Completed";
             case REJECTED:
+                return "Rejected";
+            case SPAM:
+                return "SPAM";
+            case UNDER_REVIEW:
+                return "Under Review";
+            case PENDING:
+            default:
+                return "Pending";
+        }
+    }
+    
+    // Get status text for council view (REJECTED shows as "Completed")
+    public String getStatusDisplayTextForCouncil() {
+        if (status == null) return "Pending";
+        switch (status) {
+            case ACCEPTED:
+            case REJECTED: // Council sees REJECTED as COMPLETED
+                return "Completed";
             case SPAM:
                 return "SPAM";
             case UNDER_REVIEW:
