@@ -693,18 +693,18 @@ public class TicketRepository {
     }
     
     /**
-     * Get all engineers with their ticket statistics
+     * Get all engineers with their ticket statistics using the Supabase RPC
      */
     public static void getEngineersWithStats(EngineersCallback callback) {
         new Thread(() -> {
             try {
-                // First, get all engineers from profiles table
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/profiles?role=eq.engineer&select=id,full_name,email";
+                // Call the get_engineer_stats RPC (bypasses RLS, returns aggregated stats)
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/rpc/get_engineer_stats";
                 
                 String response = SupabaseManager.makeHttpRequest(
-                    "GET",
+                    "POST",
                     url,
-                    null,
+                    "{}",  // RPC requires POST with empty body
                     SupabaseManager.getAccessToken()
                 );
                 
@@ -714,16 +714,13 @@ public class TicketRepository {
                 for (int i = 0; i < engineersArray.length(); i++) {
                     JSONObject engineerJson = engineersArray.getJSONObject(i);
                     
-                    String engineerId = engineerJson.optString("id", "");
-                    String fullName = engineerJson.optString("full_name", "Unknown");
+                    String engineerId = engineerJson.optString("engineer_id", "");
+                    String name = engineerJson.optString("name", "Unknown");
                     String email = engineerJson.optString("email", "");
+                    int totalReports = engineerJson.optInt("total_reports", 0);
+                    int highPriority = engineerJson.optInt("high_priority_reports", 0);
                     
-                    // Get ticket statistics for this engineer
-                    int[] stats = getEngineerTicketStats(engineerId);
-                    int totalReports = stats[0];
-                    int highPriority = stats[1];
-                    
-                    Engineer engineer = new Engineer(engineerId, fullName, email, totalReports, highPriority);
+                    Engineer engineer = new Engineer(engineerId, name, email, totalReports, highPriority);
                     engineers.add(engineer);
                 }
                 
@@ -732,7 +729,7 @@ public class TicketRepository {
                 }
                 
             } catch (Exception e) {
-                Log.e(TAG, "Error fetching engineers", e);
+                Log.e(TAG, "Error fetching engineers with stats", e);
                 if (callback != null) {
                     callback.onError("Error: " + e.getMessage());
                 }

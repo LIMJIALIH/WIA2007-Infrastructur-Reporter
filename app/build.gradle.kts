@@ -34,7 +34,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKeyFromLocal\"")
-        buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.0-flash-exp\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.5-flash-lite\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
     }
@@ -49,7 +49,7 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("String", "GEMINI_API_KEY", "\"\"")
-            buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.0-flash-exp\"")
+            buildConfigField("String", "GEMINI_MODEL", "\"gemini-2.5-flash-lite\"")
             buildConfigField("String", "SUPABASE_URL", "\"\"")
             buildConfigField("String", "SUPABASE_KEY", "\"\"")
         }
@@ -87,6 +87,11 @@ dependencies {
     implementation("com.google.guava:guava:33.5.0-android")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    
+    // Glide for efficient image loading and caching
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

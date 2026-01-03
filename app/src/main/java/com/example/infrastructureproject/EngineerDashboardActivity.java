@@ -578,61 +578,112 @@ public class EngineerDashboardActivity extends AppCompatActivity implements Tick
     @Override
     public void onAccept(Ticket ticket, int position) {
         showReasonDialog("Accept Ticket", "Please provide a reason for accepting this ticket:", (reason) -> {
-            ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
-            ticket.setReason(reason);
-            pendingTickets.remove(ticket);
-            acceptedTickets.add(ticket);
+            String dbId = ticket.getDbId(); // Get database UUID
+            String engineerId = SupabaseManager.getCurrentUserId();
+            
+            TicketRepository.engineerProcessTicket(dbId, engineerId, "ACCEPTED", reason, new TicketRepository.AssignTicketCallback() {
+                @Override
+                public void onSuccess() {
+                    runOnUiThread(() -> {
+                        ticket.setStatus(Ticket.TicketStatus.ACCEPTED);
+                        ticket.setReason(reason);
+                        pendingTickets.remove(ticket);
+                        acceptedTickets.add(ticket);
 
-            ticketAdapter.removeTicket(position);
-            updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
-                    spamTickets.size(), acceptedTickets.size());
-            updateStatisticsFromTickets();
+                        ticketAdapter.removeTicket(position);
+                        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                                spamTickets.size(), acceptedTickets.size());
+                        updateStatisticsFromTickets();
 
-            Toast.makeText(this, "Ticket " + ticket.getId() + " accepted", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EngineerDashboardActivity.this, "Ticket " + ticket.getId() + " accepted", Toast.LENGTH_SHORT).show();
 
-            if (ticketAdapter.getItemCount() == 0) {
-                showEmptyState();
-            }
+                        if (ticketAdapter.getItemCount() == 0) {
+                            showEmptyState();
+                        }
+                    });
+                }
+                
+                @Override
+                public void onError(String message) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(EngineerDashboardActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
         });
     }
 
     @Override
     public void onReject(Ticket ticket, int position) {
         showReasonDialog("Reject Ticket", "Please provide a reason for rejecting this ticket:", (reason) -> {
-            ticket.setStatus(Ticket.TicketStatus.REJECTED);
-            ticket.setReason(reason);
-            pendingTickets.remove(ticket);
-            rejectedTickets.add(ticket);
+            String dbId = ticket.getDbId(); // Get database UUID
+            String engineerId = SupabaseManager.getCurrentUserId();
+            
+            TicketRepository.engineerProcessTicket(dbId, engineerId, "REJECTED", reason, new TicketRepository.AssignTicketCallback() {
+                @Override
+                public void onSuccess() {
+                    runOnUiThread(() -> {
+                        ticket.setStatus(Ticket.TicketStatus.REJECTED);
+                        ticket.setReason(reason);
+                        pendingTickets.remove(ticket);
+                        rejectedTickets.add(ticket);
 
-            ticketAdapter.removeTicket(position);
-            updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
-                    spamTickets.size(), acceptedTickets.size());
-            updateStatisticsFromTickets();
+                        ticketAdapter.removeTicket(position);
+                        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                                spamTickets.size(), acceptedTickets.size());
+                        updateStatisticsFromTickets();
 
-            Toast.makeText(this, "Ticket " + ticket.getId() + " rejected", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EngineerDashboardActivity.this, "Ticket " + ticket.getId() + " rejected", Toast.LENGTH_SHORT).show();
 
-            if (ticketAdapter.getItemCount() == 0) {
-                showEmptyState();
-            }
+                        if (ticketAdapter.getItemCount() == 0) {
+                            showEmptyState();
+                        }
+                    });
+                }
+                
+                @Override
+                public void onError(String message) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(EngineerDashboardActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
         });
     }
 
     @Override
     public void onSpam(Ticket ticket, int position) {
-        ticket.setStatus(Ticket.TicketStatus.SPAM);
-        pendingTickets.remove(ticket);
-        spamTickets.add(ticket);
+        String dbId = ticket.getDbId(); // Get database UUID
+        String engineerId = SupabaseManager.getCurrentUserId();
+        
+        TicketRepository.engineerProcessTicket(dbId, engineerId, "SPAM", null, new TicketRepository.AssignTicketCallback() {
+            @Override
+            public void onSuccess() {
+                runOnUiThread(() -> {
+                    ticket.setStatus(Ticket.TicketStatus.SPAM);
+                    pendingTickets.remove(ticket);
+                    spamTickets.add(ticket);
 
-        ticketAdapter.removeTicket(position);
-        updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
-                spamTickets.size(), acceptedTickets.size());
-        updateStatisticsFromTickets();
+                    ticketAdapter.removeTicket(position);
+                    updateTabCounts(pendingTickets.size(), rejectedTickets.size(),
+                            spamTickets.size(), acceptedTickets.size());
+                    updateStatisticsFromTickets();
 
-        Toast.makeText(this, "Ticket " + ticket.getId() + " marked as spam", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EngineerDashboardActivity.this, "Ticket " + ticket.getId() + " marked as spam", Toast.LENGTH_SHORT).show();
 
-        if (ticketAdapter.getItemCount() == 0) {
-            showEmptyState();
-        }
+                    if (ticketAdapter.getItemCount() == 0) {
+                        showEmptyState();
+                    }
+                });
+            }
+            
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(EngineerDashboardActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     @Override

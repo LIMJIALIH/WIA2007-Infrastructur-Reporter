@@ -230,27 +230,15 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
         }
     }
 
-    // Load image thumbnail from Supabase URL
+    // Load image thumbnail from Supabase URL with caching
     private void loadImageThumbnail(String imageUrl, ImageView imageView) {
-        // Set placeholder while loading
-        imageView.setImageResource(R.drawable.ic_image_placeholder);
-        
-        // Load image in background thread
-        new Thread(() -> {
-            try {
-                java.net.URL url = new java.net.URL(imageUrl);
-                Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                
-                // Update UI on main thread
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    if (bitmap != null) {
-                        imageView.setImageBitmap(bitmap);
-                    }
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                // Keep placeholder on error
-            }
-        }).start();
+        // Use Glide for automatic disk and memory caching
+        // This prevents repeated downloads from Supabase and saves egress bandwidth
+        com.bumptech.glide.Glide.with(imageView.getContext())
+                .load(imageUrl)
+                .placeholder(R.drawable.ic_image_placeholder)
+                .error(R.drawable.ic_image_placeholder)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                .into(imageView);
     }
 }

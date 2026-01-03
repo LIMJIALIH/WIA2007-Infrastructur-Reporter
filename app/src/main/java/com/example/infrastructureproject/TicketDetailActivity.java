@@ -207,6 +207,31 @@ public class TicketDetailActivity extends AppCompatActivity {
     }
     
     private void loadImageFromUrl(String imageUrl) {
+        Log.d("TicketDetail", "Loading image from URL with Glide caching: " + imageUrl);
+        
+        // Use Glide for automatic disk and memory caching
+        // This prevents repeated downloads from Supabase and saves egress bandwidth
+        com.bumptech.glide.Glide.with(this)
+                .load(imageUrl)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                        Log.e("TicketDetail", "Failed to load image from Glide: " + (e != null ? e.getMessage() : "unknown error"));
+                        runOnUiThread(() -> setPlaceholderImage());
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                        Log.d("TicketDetail", "Image loaded successfully from: " + dataSource);
+                        return false;
+                    }
+                })
+                .into(ivTicketImage);
+    }
+    
+    private void loadImageFromUrlOld(String imageUrl) {
         Log.d("TicketDetail", "Attempting to load image from URL: " + imageUrl);
         
         // Load image from URL in background thread

@@ -381,22 +381,25 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     }
     
     private void loadImageFromUrl(String imageUrl) {
-        // Load image from URL in background thread
-        new Thread(() -> {
-            try {
-                java.net.URL url = new java.net.URL(imageUrl);
-                android.graphics.Bitmap bitmap = android.graphics.BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                
-                // Update UI on main thread
-                runOnUiThread(() -> {
-                    if (bitmap != null && ivTicketImage != null) {
-                        ivTicketImage.setImageBitmap(bitmap);
+        // Use Glide for automatic disk and memory caching
+        // This prevents repeated downloads from Supabase and saves egress bandwidth
+        com.bumptech.glide.Glide.with(this)
+                .load(imageUrl)
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.ALL)
+                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                        android.util.Log.e("CouncilTicketDetail", "Failed to load image: " + (e != null ? e.getMessage() : "unknown error"));
+                        return false;
                     }
-                });
-            } catch (Exception e) {
-                android.util.Log.e("CouncilTicketDetail", "Error loading image from URL: " + e.getMessage(), e);
-            }
-        }).start();
+
+                    @Override
+                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                        android.util.Log.d("CouncilTicketDetail", "Image loaded from: " + dataSource);
+                        return false;
+                    }
+                })
+                .into(ivTicketImage);
     }
     
     // Convert TicketRepository.Engineer to local Engineer for adapter
