@@ -306,8 +306,8 @@ public class TicketRepository {
     public static void getAllTickets(FetchTicketsCallback callback) {
         new Thread(() -> {
             try {
-                // Fetch all tickets (soft delete filter applied in code if column exists)
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=*&order=created_at.desc";
+                // Fetch all non-deleted tickets for council
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?deleted_by_council=eq.false&select=*&order=created_at.desc";
                 
                 String response = SupabaseManager.makeHttpRequest(
                     "GET",
@@ -376,8 +376,8 @@ public class TicketRepository {
     public static void getCouncilStatistics(CouncilStatsCallback callback) {
         new Thread(() -> {
             try {
-                // Get all tickets (soft delete filter applied in code if column exists)
-                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?select=status,severity,created_at,assigned_at";
+                // Get all non-deleted tickets for council statistics
+                String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?deleted_by_council=eq.false&select=status,severity,created_at,assigned_at";
                 
                 String response = SupabaseManager.makeHttpRequest(
                     "GET",

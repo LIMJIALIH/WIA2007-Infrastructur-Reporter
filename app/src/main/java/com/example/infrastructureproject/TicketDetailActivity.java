@@ -32,6 +32,8 @@ public class TicketDetailActivity extends AppCompatActivity {
     private Button btnAccept;
     private Button btnReject;
     private Button btnSpam;
+    private Button btnDeleteEngineerTicket;
+    private View actionButtonsContainer;
     private ImageView ivBack;
     private TextView tvReason;
     private TextView labelReason;
@@ -79,6 +81,8 @@ public class TicketDetailActivity extends AppCompatActivity {
             btnAccept = findViewById(R.id.btnAccept);
             btnReject = findViewById(R.id.btnReject);
             btnSpam = findViewById(R.id.btnSpam);
+            btnDeleteEngineerTicket = findViewById(R.id.btnDeleteEngineerTicket);
+            actionButtonsContainer = findViewById(R.id.actionButtonsContainer);
         } else {
             // Citizen view
             ivTicketImage = findViewById(R.id.ivTicketImageLarge);
@@ -358,9 +362,22 @@ public class TicketDetailActivity extends AppCompatActivity {
 
             // Hide buttons if ticket is already processed
             if (ticket != null && ticket.getStatus() != Ticket.TicketStatus.UNDER_REVIEW) {
-                if (btnAccept != null) btnAccept.setVisibility(View.GONE);
-                if (btnReject != null) btnReject.setVisibility(View.GONE);
-                if (btnSpam != null) btnSpam.setVisibility(View.GONE);
+                if (actionButtonsContainer != null) {
+                    actionButtonsContainer.setVisibility(View.GONE);
+                }
+                // Show delete button for completed tickets
+                if (btnDeleteEngineerTicket != null) {
+                    btnDeleteEngineerTicket.setVisibility(View.VISIBLE);
+                    btnDeleteEngineerTicket.setOnClickListener(v -> showEngineerDeleteConfirmation());
+                }
+            } else {
+                // Show action buttons for under review tickets
+                if (actionButtonsContainer != null) {
+                    actionButtonsContainer.setVisibility(View.VISIBLE);
+                }
+                if (btnDeleteEngineerTicket != null) {
+                    btnDeleteEngineerTicket.setVisibility(View.GONE);
+                }
             }
 
             // Show reason if exists
@@ -421,6 +438,41 @@ public class TicketDetailActivity extends AppCompatActivity {
                 }
                 if (dbId != null && !dbId.isEmpty()) {
                     TicketRepository.softDeleteTicketForCitizen(dbId, new TicketRepository.AssignTicketCallback() {
+                        @Override
+                        public void onSuccess() {
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Ticket removed from your view", Toast.LENGTH_SHORT).show();
+                                setResult(RESULT_OK);
+                                finish();
+                            });
+                        }
+                        
+                        @Override
+                        public void onError(String message) {
+                            runOnUiThread(() -> {
+                                Toast.makeText(TicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                } else {
+                    Toast.makeText(this, "Error: Ticket ID not found", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
+    }
+
+    private void showEngineerDeleteConfirmation() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Delete Ticket")
+            .setMessage("Are you sure you want to remove this ticket from your view? You won't see it again after logging in.")
+            .setPositiveButton("Delete", (dialog, which) -> {
+                String dbId = ticket.getDbId();
+                if (dbId == null || dbId.isEmpty()) {
+                    dbId = getIntent().getStringExtra("db_id");
+                }
+                if (dbId != null && !dbId.isEmpty()) {
+                    TicketRepository.softDeleteTicketForEngineer(dbId, new TicketRepository.AssignTicketCallback() {
                         @Override
                         public void onSuccess() {
                             runOnUiThread(() -> {

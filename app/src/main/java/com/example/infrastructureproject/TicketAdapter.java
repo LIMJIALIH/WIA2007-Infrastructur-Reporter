@@ -167,11 +167,12 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                     if (btnSpam != null) btnSpam.setVisibility(View.VISIBLE);
                     if (btnDelete != null) btnDelete.setVisibility(View.GONE);
                 } else {
-                    // Completed (ACCEPTED, REJECTED, SPAM) - hide action buttons, show delete
+                    // Completed (ACCEPTED, REJECTED, SPAM) - hide all buttons in list view
+                    // Delete button only shows in detail view
                     if (btnAccept != null) btnAccept.setVisibility(View.GONE);
                     if (btnReject != null) btnReject.setVisibility(View.GONE);
                     if (btnSpam != null) btnSpam.setVisibility(View.GONE);
-                    if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
+                    if (btnDelete != null) btnDelete.setVisibility(View.GONE);
                 }
 
                 if (btnAccept != null) {

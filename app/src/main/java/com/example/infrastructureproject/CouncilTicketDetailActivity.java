@@ -32,6 +32,8 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private TextView tvCouncilNotesLabel;
     private TextView tvCouncilNotes;
     private TextView tvAssignedTo;
+    private TextView tvEngineerStatusLabel;
+    private TextView tvEngineerStatus;
     private Button btnMarkAsSpam;
     private Button btnAssignToEngineer;
     private Button btnDeleteCouncilTicket;
@@ -80,12 +82,14 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         tvCouncilNotesLabel = findViewById(R.id.tvCouncilNotesLabel);
         tvCouncilNotes = findViewById(R.id.tvCouncilNotes);
         tvAssignedTo = findViewById(R.id.tvAssignedTo);
+        tvEngineerStatusLabel = findViewById(R.id.tvEngineerStatusLabel);
+        tvEngineerStatus = findViewById(R.id.tvEngineerStatus);
         btnMarkAsSpam = findViewById(R.id.btnMarkAsSpam);
         btnAssignToEngineer = findViewById(R.id.btnAssignToEngineer);
         btnDeleteCouncilTicket = findViewById(R.id.btnDeleteCouncilTicket);
         
         // Get the action buttons container
-        actionButtonsLayout = (LinearLayout) btnAssignToEngineer.getParent();
+        actionButtonsLayout = findViewById(R.id.actionButtonsLayout);
     }
 
     private void getTicketDataFromIntent() {
@@ -174,16 +178,34 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
                             tvAssignedTo.setVisibility(View.GONE);
                         }
 
-                        // Hide assign/spam buttons when assigned or spam
-                        // Show delete button for completed/spam/accepted/rejected tickets
+                        // Display engineer status
+                        if (ticket.getStatus() == Ticket.TicketStatus.ACCEPTED) {
+                            tvEngineerStatusLabel.setVisibility(View.VISIBLE);
+                            tvEngineerStatus.setVisibility(View.VISIBLE);
+                            tvEngineerStatus.setText("✓ ACCEPTED");
+                            tvEngineerStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark, null));
+                        } else if (ticket.getStatus() == Ticket.TicketStatus.REJECTED) {
+                            tvEngineerStatusLabel.setVisibility(View.VISIBLE);
+                            tvEngineerStatus.setVisibility(View.VISIBLE);
+                            tvEngineerStatus.setText("✗ REJECTED");
+                            tvEngineerStatus.setTextColor(getResources().getColor(R.color.severity_high, null));
+                        } else if (ticket.getStatus() == Ticket.TicketStatus.SPAM) {
+                            tvEngineerStatusLabel.setVisibility(View.VISIBLE);
+                            tvEngineerStatus.setVisibility(View.VISIBLE);
+                            tvEngineerStatus.setText("⚠ SPAM");
+                            tvEngineerStatus.setTextColor(getResources().getColor(R.color.severity_medium, null));
+                        } else {
+                            tvEngineerStatusLabel.setVisibility(View.GONE);
+                            tvEngineerStatus.setVisibility(View.GONE);
+                        }
+
+                        // Hide assign/spam buttons when NOT pending
+                        // Show delete button when status is NOT UNDER_REVIEW
                         if (actionButtonsLayout != null) {
-                            if (ticket.getStatus() == Ticket.TicketStatus.UNDER_REVIEW ||
-                                ticket.getStatus() == Ticket.TicketStatus.ACCEPTED ||
-                                ticket.getStatus() == Ticket.TicketStatus.REJECTED ||
-                                ticket.getStatus() == Ticket.TicketStatus.SPAM) {
+                            if (ticket.getStatus() != Ticket.TicketStatus.PENDING) {
                                 actionButtonsLayout.setVisibility(View.GONE);
-                                // Show delete button for completed tickets
-                                if (btnDeleteCouncilTicket != null) {
+                                // Show delete button when not under review
+                                if (btnDeleteCouncilTicket != null && ticket.getStatus() != Ticket.TicketStatus.UNDER_REVIEW) {
                                     btnDeleteCouncilTicket.setVisibility(View.VISIBLE);
                                 }
                             } else {
