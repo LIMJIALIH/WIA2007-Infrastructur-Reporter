@@ -573,6 +573,12 @@ public class TicketRepository {
                     // Assignment metadata for engineer view
                     ticket.setAssignedTo(ticketJson.optString("assigned_engineer_name", ""));
                     ticket.setCouncilNotes(ticketJson.optString("council_notes", ""));
+
+                    // Engineer's reason (if processed)
+                    String engineerNotes = ticketJson.optString("engineer_notes", "");
+                    if (!engineerNotes.isEmpty()) {
+                        ticket.setReason(engineerNotes);
+                    }
                     
                     // Get reporter name
                     String reporterName = getReporterName(reporterId);
