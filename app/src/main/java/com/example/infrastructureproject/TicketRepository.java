@@ -1080,20 +1080,23 @@ public class TicketRepository {
     }
     
     /**
-     * Mark ticket as SPAM with null reason
-     * Can be called by council or engineer
+     * Mark ticket as SPAM - called when council marks as spam
+     * Citizens see: status = Rejected, reason = "Marked as Spam by the Council"
+     * Council sees: ticket in Spam tab (is_spam = true)
+     * Engineers: still see the ticket (unless they delete it)
      */
     public static void markTicketAsSpam(String ticketDbId, AssignTicketCallback callback) {
         new Thread(() -> {
             try {
                 JSONObject updateData = new JSONObject();
-                updateData.put("status", "SPAM");
-                updateData.put("reason", JSONObject.NULL);
+                updateData.put("status", "Rejected");
+                updateData.put("council_notes", "Marked as Spam by the Council");
+                updateData.put("is_spam", true);
                 
                 String url = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;
                 SupabaseManager.makeHttpRequest("PATCH", url, updateData.toString(), SupabaseManager.getAccessToken());
                 
-                Log.d(TAG, "Ticket marked as SPAM");
+                Log.d(TAG, "Ticket marked as SPAM by council");
                 if (callback != null) callback.onSuccess();
             } catch (Exception e) {
                 Log.e(TAG, "Error marking ticket as SPAM", e);
