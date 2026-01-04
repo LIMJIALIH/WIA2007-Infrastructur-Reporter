@@ -369,7 +369,12 @@ public class SupabaseManager {
                 metadata.put("contentType", "image/jpeg");
                 imageBody.put("metadata", metadata);
                 
-                makeHttpRequest("POST", imagesUrl, imageBody.toString(), accessToken);
+                Log.d(TAG, "Saving image metadata - ticket_id: " + ticketUuid);
+                Log.d(TAG, "Image path: " + filePath);
+                Log.d(TAG, "Full metadata: " + imageBody.toString());
+                
+                String metadataResponse = makeHttpRequest("POST", imagesUrl, imageBody.toString(), accessToken);
+                Log.d(TAG, "Image metadata save response: " + (metadataResponse != null ? metadataResponse : "NULL"));
                 
                 mainHandler.post(() -> callback.onSuccess(filePath));
                 

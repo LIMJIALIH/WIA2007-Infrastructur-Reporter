@@ -193,6 +193,12 @@ public class TicketRepository {
                         ticket.setReason(engineerNotes);
                     }
                     
+                    // Reporter ID -> set reporter name for display (avoid Anonymous)
+                    String reporterId = ticketJson.optString("reporter_id", "");
+                    String reporterName = getReporterName(reporterId);
+                    ticket.setReporterId(reporterId);
+                    ticket.setUsername(reporterName);
+
                     // Fetch image URL for this ticket
                     String imageUrl = getTicketImageUrl(dbId);
                     if (imageUrl != null && !imageUrl.isEmpty()) {
@@ -222,6 +228,9 @@ public class TicketRepository {
         try {
             String url = BuildConfig.SUPABASE_URL + "/rest/v1/ticket_images?ticket_id=eq." + ticketDbId + "&select=path";
             
+            Log.d(TAG, "Fetching image for ticket ID: " + ticketDbId);
+            Log.d(TAG, "Query URL: " + url);
+            
             String response = SupabaseManager.makeHttpRequest(
                 "GET",
                 url,
@@ -229,21 +238,31 @@ public class TicketRepository {
                 SupabaseManager.getAccessToken()
             );
             
+            Log.d(TAG, "Image query response: " + (response != null ? response : "NULL"));
+            
             JSONArray imagesArray = new JSONArray(response);
+            Log.d(TAG, "Number of images found: " + imagesArray.length());
+            
             if (imagesArray.length() > 0) {
-                String imagePath = imagesArray.getJSONObject(0).optString("path", "");
+                JSONObject imageObj = imagesArray.getJSONObject(0);
+                String imagePath = imageObj.optString("path", "");
+                Log.d(TAG, "Image path from database: " + imagePath);
+                
                 if (!imagePath.isEmpty()) {
                     // Return full public URL
                     String imageUrl = BuildConfig.SUPABASE_URL + "/storage/v1/object/public/ticket-images/" + imagePath;
-                    Log.d(TAG, "Image URL for ticket " + ticketDbId + ": " + imageUrl);
+                    Log.d(TAG, "Constructed image URL: " + imageUrl);
                     return imageUrl;
+                } else {
+                    Log.w(TAG, "Image path is empty for ticket " + ticketDbId);
                 }
             } else {
-                Log.d(TAG, "No image found for ticket " + ticketDbId);
+                Log.d(TAG, "No image record found in ticket_images table for ticket " + ticketDbId);
             }
         } catch (Exception e) {
             // ticket_images table might not exist yet - this is okay
-            Log.w(TAG, "Could not fetch image URL (table might not exist): " + e.getMessage());
+            Log.e(TAG, "Error fetching image URL for ticket " + ticketDbId, e);
+            Log.e(TAG, "Error details: " + e.getMessage());
         }
         return null;
     }

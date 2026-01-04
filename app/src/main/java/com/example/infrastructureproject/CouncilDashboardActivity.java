@@ -385,11 +385,15 @@ public class CouncilDashboardActivity extends AppCompatActivity implements Ticke
                     for (Ticket ticket : allTickets) {
                         switch (ticket.getStatus()) {
                             case PENDING:
-                                // Only unassigned pending tickets
+                                // PENDING tickets (newly submitted by citizens, awaiting council assignment)
                                 pendingTickets.add(ticket);
                                 break;
-                            case ACCEPTED:
                             case UNDER_REVIEW:
+                                // UNDER_REVIEW tickets (assigned to engineer, pending engineer review)
+                                // For council, show these as Completed (Under Review = completed state)
+                                completedTickets.add(ticket);
+                                break;
+                            case ACCEPTED:
                             case REJECTED: // REJECTED is shown as COMPLETED for council
                                 completedTickets.add(ticket);
                                 break;
