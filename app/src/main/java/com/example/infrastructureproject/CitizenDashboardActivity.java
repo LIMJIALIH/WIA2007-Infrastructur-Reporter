@@ -207,7 +207,7 @@ public class CitizenDashboardActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     ticketAdapter.setTickets(tickets);
                     refreshButton.setEnabled(true);
-                    refreshButton.setText("🔄 Refresh");
+                    refreshButton.setText("Refresh");
                     Toast.makeText(CitizenDashboardActivity.this, 
                         "Reports refreshed (" + tickets.size() + " tickets)", 
                         Toast.LENGTH_SHORT).show();
@@ -218,7 +218,7 @@ public class CitizenDashboardActivity extends AppCompatActivity {
             public void onError(String message) {
                 runOnUiThread(() -> {
                     refreshButton.setEnabled(true);
-                    refreshButton.setText("🔄 Refresh");
+                    refreshButton.setText("Refresh");
                     Toast.makeText(CitizenDashboardActivity.this, 
                         "Error loading reports: " + message, 
                         Toast.LENGTH_SHORT).show();

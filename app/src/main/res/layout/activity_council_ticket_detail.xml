@@ -95,7 +95,7 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <!-- Type and Severity -->
+                <!-- Type -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -112,27 +112,12 @@
 
                     <TextView
                         android:id="@+id/tvTicketType"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:layout_weight="1"
                         android:text="Pothole"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/tvSeverityBadge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_severity_badge"
-                        android:paddingStart="12dp"
-                        android:paddingTop="4dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="4dp"
-                        android:text="High"
-                        android:textColor="@android:color/white"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
 
                 </LinearLayout>
 
@@ -159,6 +144,29 @@
                         android:text="Jalan Sultan Ismail, Kuala Lumpur"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
+
+                </LinearLayout>
+
+                <!-- Severity Badge -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvSeverityBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_severity_badge"
+                        android:paddingStart="12dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="4dp"
+                        android:text="High"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
 
                 </LinearLayout>
 
@@ -285,20 +293,6 @@
                 android:drawableStart="@drawable/ic_user"
                 android:drawablePadding="8dp"
                 android:text="Assign to Engineer"
-                android:textColor="@android:color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <!-- Mark as Spam Button -->
-            <Button
-                android:id="@+id/btnMarkAsSpam"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="12dp"
-                android:backgroundTint="@color/severity_high"
-                android:drawableStart="@drawable/ic_spam"
-                android:drawablePadding="8dp"
-                android:text="Mark as Spam"
                 android:textColor="@android:color/white"
                 android:textSize="16sp"
                 android:textStyle="bold" />

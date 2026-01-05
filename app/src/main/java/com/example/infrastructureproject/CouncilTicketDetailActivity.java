@@ -34,7 +34,6 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
     private TextView tvAssignedTo;
     private TextView tvEngineerStatusLabel;
     private TextView tvEngineerStatus;
-    private Button btnMarkAsSpam;
     private Button btnAssignToEngineer;
     private Button btnDeleteCouncilTicket;
     private LinearLayout actionButtonsLayout;
@@ -84,7 +83,6 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         tvAssignedTo = findViewById(R.id.tvAssignedTo);
         tvEngineerStatusLabel = findViewById(R.id.tvEngineerStatusLabel);
         tvEngineerStatus = findViewById(R.id.tvEngineerStatus);
-        btnMarkAsSpam = findViewById(R.id.btnMarkAsSpam);
         btnAssignToEngineer = findViewById(R.id.btnAssignToEngineer);
         btnDeleteCouncilTicket = findViewById(R.id.btnDeleteCouncilTicket);
         
@@ -236,9 +234,6 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // Mark as Spam
-        btnMarkAsSpam.setOnClickListener(v -> showMarkAsSpamDialog());
-
         // Assign to Engineer
         btnAssignToEngineer.setOnClickListener(v -> showEngineerSelectionDialog());
         
@@ -246,32 +241,6 @@ public class CouncilTicketDetailActivity extends AppCompatActivity {
         if (btnDeleteCouncilTicket != null) {
             btnDeleteCouncilTicket.setOnClickListener(v -> showDeleteConfirmation());
         }
-    }
-
-    private void showMarkAsSpamDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Mark as Spam")
-                .setMessage("Are you sure you want to mark this ticket as spam? This action cannot be undone.")
-                .setPositiveButton("Yes, Mark as Spam", (dialog, which) -> {
-                    // Update ticket status to SPAM in Supabase with null reason
-                    TicketRepository.markTicketAsSpam(ticketDbId, new TicketRepository.AssignTicketCallback() {
-                        @Override
-                        public void onSuccess() {
-                            runOnUiThread(() -> {
-                                Toast.makeText(CouncilTicketDetailActivity.this, "Ticket marked as spam", Toast.LENGTH_SHORT).show();
-                                finish();
-                            });
-                        }
-                        @Override
-                        public void onError(String message) {
-                            runOnUiThread(() -> {
-                                Toast.makeText(CouncilTicketDetailActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
-                            });
-                        }
-                    });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
 
     private void showEngineerSelectionDialog() {
