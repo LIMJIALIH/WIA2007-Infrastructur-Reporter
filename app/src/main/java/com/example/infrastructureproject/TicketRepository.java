@@ -942,12 +942,17 @@ public class TicketRepository {
                 switch (actionType) {
                     case "ACCEPTED": statusValue = "Accepted"; break;
                     case "REJECTED": statusValue = "Rejected"; break;
-                    case "SPAM": statusValue = "Spam"; break;
+                    case "SPAM": statusValue = "SPAM"; break; // Changed to uppercase to match trigger
                     default: statusValue = "Pending"; break;
                 }
                 JSONObject updateData = new JSONObject();
                 updateData.put("status", statusValue);
-                if (reason != null && !reason.isEmpty()) {
+                
+                // For SPAM, always set engineer_notes to "Marked As Spam"
+                // For ACCEPTED/REJECTED, use the provided reason
+                if (actionType.equals("SPAM")) {
+                    updateData.put("engineer_notes", "Marked As Spam");
+                } else if (reason != null && !reason.isEmpty()) {
                     updateData.put("engineer_notes", reason);
                 }
                 String updateUrl = BuildConfig.SUPABASE_URL + "/rest/v1/tickets?id=eq." + ticketDbId;

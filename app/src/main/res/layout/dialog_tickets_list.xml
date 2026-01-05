@@ -42,7 +42,8 @@
         android:id="@+id/recyclerViewTickets"
         android:layout_width="match_parent"
         android:layout_height="250dp"
-        android:overScrollMode="never"
+        android:scrollbars="vertical"
+        android:overScrollMode="ifContentScrolls"
         android:background="#f5f5f5"
         android:padding="8dp" />
 

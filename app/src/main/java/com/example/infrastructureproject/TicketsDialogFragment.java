@@ -54,6 +54,7 @@ public class TicketsDialogFragment extends DialogFragment {
         // 2. Setup RecyclerView
         RecyclerView recyclerView = view.findViewById(R.id.recyclerViewTickets);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setHasFixedSize(true); // Optimize RecyclerView performance
 
         // Get tickets from arguments instead of TicketManager
         List<Ticket> filteredTickets = filterTickets(allTickets, reportTypeString);
@@ -124,7 +125,8 @@ public class TicketsDialogFragment extends DialogFragment {
                 filtered.add(ticket);
             } else if (typeString.equalsIgnoreCase("Accepted") && ticket.getStatus() == Ticket.TicketStatus.ACCEPTED) {
                 filtered.add(ticket);
-            } else if (typeString.equalsIgnoreCase("Rejected") && ticket.getStatus() == Ticket.TicketStatus.REJECTED) {
+            } else if (typeString.equalsIgnoreCase("Rejected") && (ticket.getStatus() == Ticket.TicketStatus.REJECTED || ticket.getStatus() == Ticket.TicketStatus.SPAM)) {
+                // Citizens see both REJECTED and SPAM tickets as "Rejected"
                 filtered.add(ticket);
             } else if (typeString.equalsIgnoreCase("Spam") && ticket.getStatus() == Ticket.TicketStatus.SPAM) {
                 filtered.add(ticket);

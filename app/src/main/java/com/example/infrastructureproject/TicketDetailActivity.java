@@ -145,7 +145,8 @@ public class TicketDetailActivity extends AppCompatActivity {
 
         // Set status (only for citizen view)
         if (!isEngineerView && tvStatus != null && ticket.getStatus() != null) {
-            String statusText = ticket.getStatus().toString();
+            // Use citizen-specific status display (SPAM shows as "Rejected")
+            String statusText = ticket.getStatusDisplayTextForCitizen();
             tvStatus.setText(statusText);
         }
 
@@ -433,11 +434,11 @@ public class TicketDetailActivity extends AppCompatActivity {
                 }
             }
             
-            // Show reason if exists (for accepted/rejected tickets, but not SPAM)
+            // Show reason if exists (for accepted/rejected/spam tickets in citizen view)
             if (ticket != null && ticket.getReason() != null && !ticket.getReason().isEmpty() 
-                && !ticket.getReason().equalsIgnoreCase("null") && ticket.getStatus() != Ticket.TicketStatus.SPAM) {
+                && !ticket.getReason().equalsIgnoreCase("null")) {
                 if (labelReason != null) {
-                    labelReason.setText("Engineer's Reason");
+                    labelReason.setText("Reason");
                     labelReason.setVisibility(View.VISIBLE);
                 }
                 if (tvReason != null) {
@@ -445,7 +446,7 @@ public class TicketDetailActivity extends AppCompatActivity {
                     tvReason.setText(ticket.getReason());
                 }
             } else {
-                // Hide if no reason, null, or SPAM status
+                // Hide if no reason or null
                 if (labelReason != null) labelReason.setVisibility(View.GONE);
                 if (tvReason != null) tvReason.setVisibility(View.GONE);
             }

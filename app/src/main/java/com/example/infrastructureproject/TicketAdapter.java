@@ -211,9 +211,14 @@ public class TicketAdapter extends RecyclerView.Adapter<TicketAdapter.TicketView
                 if (tvStatus != null) {
                     if (ticket.getStatus() != null) {
                         // Use council-specific status text if in council mode
-                        String statusText = isCouncilMode 
-                            ? "Status: " + ticket.getStatusDisplayTextForCouncil()
-                            : "Status: " + ticket.getStatusDisplayText();
+                        // Use citizen-specific status text if in citizen mode (SPAM shows as "Rejected")
+                        String statusText;
+                        if (isCouncilMode) {
+                            statusText = "Status: " + ticket.getStatusDisplayTextForCouncil();
+                        } else {
+                            // Citizen mode - SPAM tickets show as "Rejected"
+                            statusText = "Status: " + ticket.getStatusDisplayTextForCitizen();
+                        }
                         tvStatus.setText(statusText);
                     } else {
                         tvStatus.setText("Status: Pending");
