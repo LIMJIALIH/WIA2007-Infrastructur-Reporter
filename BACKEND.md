@@ -1,3 +1,5 @@
+<<<<<<< HEAD
+=======
 ## **Tech Stack**
 
 ### **Platform & Core**
@@ -64,6 +66,7 @@
 
 **Note:** All team members work on **separate files** to avoid merge conflicts. Each person creates new backend classes and only edits their own frontend files.s configuration.
 
+>>>>>>> 89b7a4c45b15cdc14b9f255e47afe741be31d08c
 ## **DETAILED BACKEND WORK ALLOCATION (All in One, Separate Files)**
 
 ---
