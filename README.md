@@ -240,10 +240,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👥 Team
 
-**WIA2007 Project Team**
-- Course: Software Engineering
-- Institution: [Your University Name]
-- Academic Year: 2025/2026
+**Project Team**
+- Team Name: Laichai
+- Course: WIA2007 Mobile Application Development
+- Institution: University of Malaya
+- Team Members: Chua Yu Jien, Ling Hua Rong, Lim Jia Lih, Ong Yi Hao, Ng Zheng Jie, Theng Pei Yi
+- Academic Year: 2025/2026, Semester 1
 
 ## 🙏 Acknowledgments
 
