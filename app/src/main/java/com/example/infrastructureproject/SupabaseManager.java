@@ -190,8 +190,14 @@ public class SupabaseManager {
         executor.execute(() -> {
             try {
                 String authUrl = SUPABASE_URL + "/auth/v1/recover";
+                String redirectUrl = "infrastructurereporter://reset-password";
+                
                 JSONObject body = new JSONObject();
                 body.put("email", email);
+                // Tell Supabase to redirect to our app's deep link after user clicks email
+                body.put("redirectTo", redirectUrl);
+                
+                Log.d(TAG, "Sending password reset with redirectTo: " + redirectUrl);
                 
                 makeHttpRequest("POST", authUrl, body.toString(), null);
                 postSuccess(callback, null, null);
